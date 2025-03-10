@@ -41,22 +41,21 @@ stage('Test') {
 
 
 
+stage('Build') {
+    steps {
+        script {
+            def modulesList = env.MODULES_CHANGED.split(',')
 
-
-        stage('Build') {
-            steps {
-                script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
-                    
-                    modulesList.each { module ->
-                        dir(module) {
-                            echo "Building module: ${module}"
-                            sh './mvnw clean package'
-                        }
-                    }
+            modulesList.each { module ->
+                dir(module) {
+                    echo "Building module: ${module}"
+                    sh "${WORKSPACE}/mvnw clean package"
                 }
             }
         }
+    }
+}
+
 
         stage('Deploy') {
             steps {
