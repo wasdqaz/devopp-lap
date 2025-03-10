@@ -1,58 +1,52 @@
 pipeline {
     agent any
+
     environment {
-        MODULES_CHANGED = ''
-        REQUIRED_PHASES_PASSED = false
+        DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
     }
+
     stages {
+        stage('Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Detect Changes') {
             steps {
                 script {
-                    def changedFiles = sh(script: "git diff --name-only HEAD~1", returnStdout: true).trim().split("\n")
-                    echo "Changed files:\n${changedFiles.join('\n')}"
+                    // Get changed files in last commit (modify this command if needed)
+                    def changedFiles = sh(script: "git diff --name-only origin/main", returnStdout: true).trim()
+                    echo "Changed files:\n${changedFiles}"
 
-                    def services = [
-                        "spring-petclinic-admin-server",
-                        "spring-petclinic-api-gateway",
-                        "spring-petclinic-config-server",
-                        "spring-petclinic-customers-service",
-                        "spring-petclinic-discovery-server",
-                        "spring-petclinic-genai-service",
-                        "spring-petclinic-vets-service",
-                        "spring-petclinic-visits-service"
-                    ]
+                    // Extract changed modules based on directory structure
+                    def changedModules = changedFiles
+                        .split("\n")
+                        .collect { it.split('/')[0] }
+                        .unique()
+                        .join(',')
 
-                    def affectedServices = services.findAll { service ->
-                        changedFiles.any { file -> file.startsWith("${service}/") }
-                    }
-
-                    if (affectedServices) {
-                        env.MODULES_CHANGED = affectedServices.join(',')
-                    }
-
-                    echo "Affected services: ${env.MODULES_CHANGED}"
+                    env.MODULES_CHANGED = changedModules ?: env.DEFAULT_MODULES
+                    echo "Modules to process: ${env.MODULES_CHANGED}"
                 }
             }
         }
 
         stage('Test') {
-            when { expression { env.MODULES_CHANGED != '' } }
             steps {
                 script {
-                    env.MODULES_CHANGED.split(',').each { module ->
-                        dir("${module}") {
+                    def modulesList = env.MODULES_CHANGED.split(',')
+                    
+                    modulesList.each { module ->
+                        dir(module) {
+                            echo "Running tests for module: ${module}"
                             sh './mvnw test'
-                        }
-                    }
-                    env.REQUIRED_PHASES_PASSED = true  // Đánh dấu phase Test đã chạy
-                }
-            }
-            post {
-                always {
-                    script {
-                        env.MODULES_CHANGED.split(',').each { module ->
-                            junit "${module}/target/surefire-reports/*.xml"
-                            jacoco execPattern: "${module}/target/jacoco.exec"
+
+                            // Archive test results
+                            junit '**/target/surefire-reports/*.xml'
+
+                            // Upload code coverage report (adjust path if needed)
+                            publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')]
                         }
                     }
                 }
@@ -60,28 +54,45 @@ pipeline {
         }
 
         stage('Build') {
-            when { expression { env.MODULES_CHANGED != '' } }
             steps {
                 script {
-                    env.MODULES_CHANGED.split(',').each { module ->
-                        dir("${module}") {
-                            sh './mvnw clean package -DskipTests'
+                    def modulesList = env.MODULES_CHANGED.split(',')
+                    
+                    modulesList.each { module ->
+                        dir(module) {
+                            echo "Building module: ${module}"
+                            sh './mvnw clean package'
                         }
                     }
-                    env.REQUIRED_PHASES_PASSED = true  // Đánh dấu phase Build đã chạy
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    def modulesList = env.MODULES_CHANGED.split(',')
+                    
+                    modulesList.each { module ->
+                        dir(module) {
+                            echo "Deploying module: ${module}"
+                            sh './deploy.sh'  // Adjust this to match your deployment process
+                        }
+                    }
                 }
             }
         }
     }
-    
-    // Kiểm tra nếu cả Test và Build không chạy thì pipeline sẽ fail
+
     post {
         always {
-            script {
-                if (!env.REQUIRED_PHASES_PASSED.toBoolean()) {
-                    error("Pipeline phải có ít nhất 2 phase: Test và Build.")
-                }
-            }
+            echo 'Pipeline execution completed'
+        }
+        success {
+            echo 'Pipeline finished successfully'
+        }
+        failure {
+            echo 'Pipeline failed. Check logs for errors'
         }
     }
 }
