@@ -32,11 +32,32 @@ pipeline {
         }
 
     stage('Test') {
-        steps {
-            sh './mvnw test'
-            junit '**/target/surefire-reports/*.xml'
+            when { expression { env.MODULES_CHANGED != '' } }  // Chạy test nếu có module thay đổi
+            steps {
+                script {
+                    def modulesList = env.MODULES_CHANGED.split(',')
+
+                    modulesList.each { module ->
+                        dir(module) {
+                            echo "Running tests for module: ${module}"
+                            sh "${WORKSPACE}/mvnw test"
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    script {
+                        def modulesList = env.MODULES_CHANGED.split(',')
+
+                        modulesList.each { module ->
+                            junit "${module}/target/surefire-reports/*.xml" // Upload kết quả test
+                            jacoco execPattern: "${module}/target/jacoco.exec" // Upload báo cáo độ phủ
+                        }
+                    }
+                }
+            }
         }
-    }
 
 
 
