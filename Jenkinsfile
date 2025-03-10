@@ -57,21 +57,7 @@ stage('Build') {
 }
 
 
-        stage('Deploy') {
-            steps {
-                script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
-                    
-                    modulesList.each { module ->
-                        dir(module) {
-                            echo "Deploying module: ${module}"
-                            sh './deploy.sh'  // Adjust this to match your deployment process
-                        }
-                    }
-                }
-            }
-        }
-    }
+
 
     post {
         always {
