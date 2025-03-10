@@ -41,7 +41,7 @@ pipeline {
                                 dir(module) {
                                     echo "Running tests for module: ${module}"
                                     
-                                    if (fileExists("/root/.mvn/wrapper/mvnw")) {
+                                    if (fileExists(".mvn/wrapper/mvnw")) {
                                         sh '/root/.mvn/wrapper/mvnw test'
                                     } else {
                                         sh 'mvn test'
