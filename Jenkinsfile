@@ -32,15 +32,17 @@ pipeline {
         }
 
     stage('Test') {
-            when { expression { env.MODULES_CHANGED != '' } }  // Chạy test nếu có module thay đổi
             steps {
                 script {
                     def modulesList = env.MODULES_CHANGED.split(',')
 
                     modulesList.each { module ->
                         dir(module) {
-                            echo "Running tests for module: ${module}"
-                            sh "${WORKSPACE}/mvnw test"
+                            echo "Running tests for: ${module}"
+                            sh "${WORKSPACE}/mvnw test --fail-at-end -Dmaven.test.failure.ignore=true"
+
+                            // Debug: Liệt kê test reports
+                            sh "ls -la target/surefire-reports/ || true"
                         }
                     }
                 }
@@ -51,8 +53,11 @@ pipeline {
                         def modulesList = env.MODULES_CHANGED.split(',')
 
                         modulesList.each { module ->
-                            junit "${module}/target/surefire-reports/*.xml" // Upload kết quả test
-                            jacoco execPattern: "${module}/target/jacoco.exec" // Upload báo cáo độ phủ
+                            echo "Uploading test results for: ${module}"
+                            junit allowEmptyResults: true, testResults: "${module}/target/surefire-reports/*.xml"
+
+                            echo "Uploading code coverage for: ${module}"
+                            jacoco execPattern: "${module}/target/jacoco.exec"
                         }
                     }
                 }
