@@ -30,25 +30,29 @@ pipeline {
                 }
             }
         }
+pipeline {
+    agent any
+    stages {
         stage('Test') {
-    steps {
-        script {
-            def modulesList = env.MODULES_CHANGED.split(',')
-
-            modulesList.each { module ->
-                if (fileExists("${module}/pom.xml")) {  
-                    if (fileExists("${module}/src/test")) {  
-                        echo "Running tests for module: ${module}"
-                        
-                        sh "./mvnw -pl ${module} test"  // Chạy từ root, chỉ test module đó
-
-                        junit "**/${module}/target/surefire-reports/*.xml"
-                        publishCoverage adapters: [jacocoAdapter("**/${module}/target/site/jacoco/jacoco.xml")]
-                    } else {
-                        echo "Skipping tests for ${module} (No tests found)"
+            steps {
+                script {
+                    def modulesList = ['spring-petclinic-api-gateway', 'spring-petclinic-admin-server']
+                    dir("${env.WORKSPACE}") { // Chạy từ thư mục gốc
+                        modulesList.each { module ->
+                            if (fileExists("${module}/pom.xml")) {
+                                if (fileExists("${module}/src/test")) {
+                                    echo "Running tests for module: ${module}"
+                                    sh "./mvnw test -pl ${module}"
+                                    junit "**/${module}/target/surefire-reports/*.xml"
+                                    publishCoverage adapters: [jacocoAdapter("**/${module}/target/site/jacoco/jacoco.xml")]
+                                } else {
+                                    echo "Skipping tests for ${module} (No tests found)"
+                                }
+                            } else {
+                                echo "Skipping test for ${module} (No pom.xml found)"
+                            }
+                        }
                     }
-                } else {
-                    echo "Skipping test for ${module} (No pom.xml found)"
                 }
             }
         }
