@@ -30,19 +30,22 @@ pipeline {
                 }
             }
         }
-
-
         stage('Test') {
             steps {
                 script {
                     def modulesList = env.MODULES_CHANGED.split(',')
         
                     modulesList.each { module ->
-                        if (fileExists("${module}/pom.xml")) {  // Kiểm tra module có pom.xml không
-                            if (fileExists("${module}/src/test")) {  // Chỉ chạy test nếu có src/test
+                        if (fileExists("${module}/pom.xml")) {
+                            if (fileExists("${module}/src/test")) {
                                 dir(module) {
                                     echo "Running tests for module: ${module}"
-                                    sh './mvnw test'
+                                    
+                                    if (fileExists("/root/.mvn/wrapper/mvnw")) {
+                                        sh '/root/.mvn/wrapper/mvnw test'
+                                    } else {
+                                        sh 'mvn test'
+                                    }
         
                                     junit '**/target/surefire-reports/*.xml'
                                     publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')]
