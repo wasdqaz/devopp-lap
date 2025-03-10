@@ -36,15 +36,19 @@ pipeline {
             steps {
                 script {
                     def modulesList = env.MODULES_CHANGED.split(',')
-                    
+        
                     modulesList.each { module ->
                         if (fileExists("${module}/pom.xml")) {  // Kiểm tra module có pom.xml không
-                            dir(module) {
-                                echo "Running tests for module: ${module}"
-                                sh './mvnw test'
+                            if (fileExists("${module}/src/test")) {  // Chỉ chạy test nếu có src/test
+                                dir(module) {
+                                    echo "Running tests for module: ${module}"
+                                    sh './mvnw test'
         
-                                junit '**/target/surefire-reports/*.xml'
-                                publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')]
+                                    junit '**/target/surefire-reports/*.xml'
+                                    publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')]
+                                }
+                            } else {
+                                echo "Skipping tests for ${module} (No tests found)"
                             }
                         } else {
                             echo "Skipping test for ${module} (No pom.xml found)"
@@ -52,7 +56,7 @@ pipeline {
                     }
                 }
             }
-}
+        }
 
 
         stage('Build') {
