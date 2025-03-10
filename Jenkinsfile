@@ -15,22 +15,22 @@ pipeline {
         stage('Detect Changes') {
             steps {
                 script {
-                    // Get changed files in last commit (modify this command if needed)
                     def changedFiles = sh(script: "git diff --name-only origin/main", returnStdout: true).trim()
                     echo "Changed files:\n${changedFiles}"
-
-                    // Extract changed modules based on directory structure
+        
                     def changedModules = changedFiles
                         .split("\n")
-                        .collect { it.split('/')[0] }
+                        .collect { it.split('/')[0] }  // Lấy thư mục cấp 1 (tên module)
                         .unique()
+                        .findAll { it && it != 'Jenkinsfile' }  // Loại bỏ Jenkinsfile nếu bị nhận diện nhầm
                         .join(',')
-
+        
                     env.MODULES_CHANGED = changedModules ?: env.DEFAULT_MODULES
                     echo "Modules to process: ${env.MODULES_CHANGED}"
                 }
             }
         }
+
 
         stage('Test') {
             steps {
@@ -38,20 +38,22 @@ pipeline {
                     def modulesList = env.MODULES_CHANGED.split(',')
                     
                     modulesList.each { module ->
-                        dir(module) {
-                            echo "Running tests for module: ${module}"
-                            sh './mvnw test'
-
-                            // Archive test results
-                            junit '**/target/surefire-reports/*.xml'
-
-                            // Upload code coverage report (adjust path if needed)
-                            publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')]
+                        if (fileExists("${module}/pom.xml")) {  // Kiểm tra module có pom.xml không
+                            dir(module) {
+                                echo "Running tests for module: ${module}"
+                                sh './mvnw test'
+        
+                                junit '**/target/surefire-reports/*.xml'
+                                publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')]
+                            }
+                        } else {
+                            echo "Skipping test for ${module} (No pom.xml found)"
                         }
                     }
                 }
             }
-        }
+}
+
 
         stage('Build') {
             steps {
