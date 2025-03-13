@@ -40,7 +40,7 @@ pipeline {
                         dir(module) {
                             echo "Running tests for: ${module}"
                             // Run JaCoCo agent during test phase
-                            sh "${WORKSPACE}/mvnw test jacoco:prepare-agent -Dmaven.test.failure.ignore=true"
+                            sh "${WORKSPACE}/mvnw jacoco:prepare-agent test  -Dmaven.test.failure.ignore=true"
 
                             // Debug: Liệt kê test reports
                             sh "ls -la target/surefire-reports/ || true"
