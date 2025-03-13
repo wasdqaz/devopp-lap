@@ -50,7 +50,7 @@ pipeline {
             post {
                 always {
                     script {
-                        def modulesList = env.MODULES_CHANGED.split(',')
+                        def modulesList = (env.MODULES_CHANGED ?: "").trim() ? env.MODULES_CHANGED.split(',') : []
 
                         modulesList.each { module ->
                             echo "Uploading test results for: ${module}"
@@ -70,7 +70,7 @@ pipeline {
     stage('Build') {
         steps {
             script {
-                def modulesList = env.MODULES_CHANGED.split(',')
+                def modulesList = (env.MODULES_CHANGED ?: "").trim() ? env.MODULES_CHANGED.split(',') : []
     
                 modulesList.each { module ->
                     dir(module) {
