@@ -60,12 +60,13 @@ pipeline {
                             echo "Uploading code coverage for: ${module}"
                             // Specify JaCoCo report pattern
                             jacoco(
-                                execPattern: '**/target/jacoco-combined.exec',
+                                execPattern: '**/target/jacoco.exec',
                                 classPattern: '**/target/classes',
                                 sourcePattern: '**/src/main/java',
                                 inclusionPattern: "com/**/*",
                                 exclusionPattern: "com/example/**/*"
                             )
+
                         }
                     }
                 }
