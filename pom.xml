@@ -98,27 +98,33 @@
                             </execution>
                         </executions>
                     </plugin>
-
+                    
                     <plugin>
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>0.8.8</version> <!-- Use the latest version -->
+                        <version>0.8.8</version>
                         <executions>
                             <execution>
-                                <id>prepare-agent</id>
+                                <id>merge-exec-files</id>
+                                <phase>package</phase>
                                 <goals>
-                                    <goal>prepare-agent</goal>
+                                    <goal>merge</goal>
                                 </goals>
-                            </execution>
-                            <execution>
-                                <id>report</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>report</goal>
-                                </goals>
+                                <configuration>
+                                    <fileSets>
+                                        <fileSet>
+                                            <directory>${project.build.directory}</directory>
+                                            <includes>
+                                                <include>**/jacoco.exec</include>
+                                            </includes>
+                                        </fileSet>
+                                    </fileSets>
+                                    <destFile>${project.build.directory}/jacoco-combined.exec</destFile>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
+
 
                     <!-- Spring Boot Actuator displays build-related information if a META-INF/build-info.properties file is present -->
                     <plugin>
