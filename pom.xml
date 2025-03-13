@@ -102,28 +102,24 @@
                     <plugin>
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>0.8.8</version>
+                        <version>0.8.8</version> <!-- Use the latest version -->
                         <executions>
                             <execution>
-                                <id>merge-exec-files</id>
-                                <phase>package</phase>
+                                <id>prepare-agent</id>
                                 <goals>
-                                    <goal>merge</goal>
+                                    <goal>prepare-agent</goal>
                                 </goals>
-                                <configuration>
-                                    <fileSets>
-                                        <fileSet>
-                                            <directory>${project.build.directory}</directory>
-                                            <includes>
-                                                <include>**/jacoco.exec</include>
-                                            </includes>
-                                        </fileSet>
-                                    </fileSets>
-                                    <destFile>${project.build.directory}/jacoco-combined.exec</destFile>
-                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
                             </execution>
                         </executions>
                     </plugin>
+
 
 
                     <!-- Spring Boot Actuator displays build-related information if a META-INF/build-info.properties file is present -->
