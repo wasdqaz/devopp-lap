@@ -40,7 +40,7 @@ pipeline {
                         dir(module) {
                             echo "Running tests for: ${module}"
                             // Run JaCoCo agent during test phase
-                            sh "${WORKSPACE}/mvnw jacoco:prepare-agent test  -Pspringboot"
+                            sh "../mvnw jacoco:prepare-agent test  -Pspringboot"
                         }
                     }
                 }
