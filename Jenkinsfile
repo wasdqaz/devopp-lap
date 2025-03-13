@@ -60,7 +60,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-api-gateway') {
-                                    sh '/mvnw clean test'
+                                    sh '../mvnw clean verify -Pspringboot'
                                 }
                             }
                             post {
@@ -102,7 +102,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-customers-service') {
-                                    sh '/mvnw clean test'
+                                    sh '../mvnw clean verify -Pspringboot'
                                 }
                             }
                             post {
@@ -120,7 +120,7 @@ pipeline {
                         stage('Build') {
                             steps {
                                 dir('spring-petclinic-customers-service') {
-                                    sh '/mvnw package -DskipTests'
+                                    sh '../mvnw clean verify -Pspringboot'
                                 }
                             }
                             post {
@@ -144,7 +144,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-vets-service') {
-                                    sh '/mvnw clean test'
+                                    sh '../mvnw clean verify -Pspringboot'
                                 }
                             }
                             post {
@@ -186,7 +186,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-visits-service') {
-                                    sh '/mvnw clean test'
+                                    sh '../mvnw clean verify -Pspringboot'
                                 }
                             }
                             post {
@@ -228,7 +228,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-config-server') {
-                                    sh '/mvnw clean test'
+                                    sh '../mvnw clean verify -Pspringboot'
                                 }
                             }
                             post {
@@ -270,7 +270,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-discovery-server') {
-                                    sh '/mvnw clean test'
+                                    sh '../mvnw clean verify -Pspringboot'
                                 }
                             }
                             post {
@@ -312,7 +312,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-admin-server') {
-                                    sh '/mvnw clean test'
+                                    sh '../mvnw clean verify -Pspringboot'
                                 }
                             }
                             post {
@@ -354,7 +354,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-genai-service') {
-                                    sh '/mvnw clean test'
+                                    sh '../mvnw clean verify -Pspringboot'
                                 }
                             }
                             post {
