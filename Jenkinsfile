@@ -25,7 +25,7 @@ pipeline {
                         .findAll { it && it != 'Jenkinsfile' }  // Loại bỏ Jenkinsfile nếu bị nhận diện nhầm
                         .join(',')
         
-                    env.MODULES_CHANGED = changedModules ?: env.DEFAULT_MODULES
+                    env.MODULES_CHANGED = changedModules
                     echo "Modules to process: ${env.MODULES_CHANGED}"
                 }
             }
@@ -34,7 +34,7 @@ pipeline {
     stage('Test') {
             steps {
                 script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
+                    def modulesList = (env.MODULES_CHANGED ?: "").trim() ? env.MODULES_CHANGED.split(',') : []
 
                     modulesList.each { module ->
                         dir(module) {
