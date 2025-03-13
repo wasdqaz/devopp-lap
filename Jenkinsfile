@@ -28,13 +28,15 @@ pipeline {
                         env.MODULES_CHANGED = changedModules
                         echo "Modules to process: ${env.MODULES_CHANGED}"
                     } else {
-                        // Nếu không có thay đổi, có thể chọn build tất cả hoặc không build gì
-                        env.MODULES_CHANGED = env.DEFAULT_MODULES
-                        echo "No changes detected - using default modules: ${env.MODULES_CHANGED}"
+                        // Không có thay đổi, dừng pipeline
+                        echo "No changes detected - stopping pipeline."
+                        currentBuild.result = 'ABORTED'
+                        error('No changes detected')
                     }
                 }
             }
         }
+
 
         stage('Test') {
             steps {
