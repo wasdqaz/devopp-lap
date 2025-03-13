@@ -62,7 +62,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-api-gateway') {
-                                    sh 'mvn clean test'
+                                    sh '/mvnw clean test'
                                 }
                             }
                             post {
@@ -80,7 +80,7 @@ pipeline {
                         stage('Build') {
                             steps {
                                 dir('spring-petclinic-api-gateway') {
-                                    sh 'mvn package -DskipTests'
+                                    sh '/mvnw package -DskipTests'
                                 }
                             }
                             post {
@@ -104,7 +104,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-customers-service') {
-                                    sh 'mvn clean test'
+                                    sh '/mvnw clean test'
                                 }
                             }
                             post {
@@ -122,7 +122,7 @@ pipeline {
                         stage('Build') {
                             steps {
                                 dir('spring-petclinic-customers-service') {
-                                    sh 'mvn package -DskipTests'
+                                    sh '/mvnw package -DskipTests'
                                 }
                             }
                             post {
@@ -146,7 +146,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-vets-service') {
-                                    sh 'mvn clean test'
+                                    sh '/mvnw clean test'
                                 }
                             }
                             post {
@@ -164,7 +164,7 @@ pipeline {
                         stage('Build') {
                             steps {
                                 dir('spring-petclinic-vets-service') {
-                                    sh 'mvn package -DskipTests'
+                                    sh '/mvnw package -DskipTests'
                                 }
                             }
                             post {
@@ -188,7 +188,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-visits-service') {
-                                    sh 'mvn clean test'
+                                    sh '/mvnw clean test'
                                 }
                             }
                             post {
@@ -206,7 +206,7 @@ pipeline {
                         stage('Build') {
                             steps {
                                 dir('spring-petclinic-visits-service') {
-                                    sh 'mvn package -DskipTests'
+                                    sh '/mvnw package -DskipTests'
                                 }
                             }
                             post {
@@ -230,7 +230,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-config-server') {
-                                    sh 'mvn clean test'
+                                    sh '/mvnw clean test'
                                 }
                             }
                             post {
@@ -248,7 +248,7 @@ pipeline {
                         stage('Build') {
                             steps {
                                 dir('spring-petclinic-config-server') {
-                                    sh 'mvn package -DskipTests'
+                                    sh '/mvnw package -DskipTests'
                                 }
                             }
                             post {
@@ -272,7 +272,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-discovery-server') {
-                                    sh 'mvn clean test'
+                                    sh '/mvnw clean test'
                                 }
                             }
                             post {
@@ -290,7 +290,7 @@ pipeline {
                         stage('Build') {
                             steps {
                                 dir('spring-petclinic-discovery-server') {
-                                    sh 'mvn package -DskipTests'
+                                    sh '/mvnw package -DskipTests'
                                 }
                             }
                             post {
@@ -314,7 +314,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-admin-server') {
-                                    sh 'mvn clean test'
+                                    sh '/mvnw clean test'
                                 }
                             }
                             post {
@@ -332,7 +332,7 @@ pipeline {
                         stage('Build') {
                             steps {
                                 dir('spring-petclinic-admin-server') {
-                                    sh 'mvn package -DskipTests'
+                                    sh '/mvnw package -DskipTests'
                                 }
                             }
                             post {
@@ -356,7 +356,7 @@ pipeline {
                         stage('Test') {
                             steps {
                                 dir('spring-petclinic-genai-service') {
-                                    sh 'mvn clean test'
+                                    sh '/mvnw clean test'
                                 }
                             }
                             post {
@@ -374,7 +374,7 @@ pipeline {
                         stage('Build') {
                             steps {
                                 dir('spring-petclinic-genai-service') {
-                                    sh 'mvn package -DskipTests'
+                                    sh '/mvnw package -DskipTests'
                                 }
                             }
                             post {
