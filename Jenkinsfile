@@ -66,6 +66,7 @@ pipeline {
                                 inclusionPattern: "org/springframework/samples/petclinic/**/*"
                             )
 
+
                         }
                     }
                 }
