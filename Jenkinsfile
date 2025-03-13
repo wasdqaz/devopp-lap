@@ -17,7 +17,6 @@ pipeline {
                 script {
                     def changedFiles = sh(script: "git diff --name-only origin/main", returnStdout: true).trim()
                     echo "Changed files:\n${changedFiles}"
-        
                     def changedModules = changedFiles
                         .split("\n")
                         .collect { it.split('/')[0] }  // Lấy thư mục cấp 1 (tên module)
