@@ -13,8 +13,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Dọn dẹp workspace trước khi checkout
-                cleanWs()
                 // Checkout code từ SCM
                 checkout scm
             }
@@ -390,10 +388,6 @@ pipeline {
     }
     
     post {
-        always {
-            // Dọn dẹp workspace sau khi hoàn thành
-            cleanWs()
-        }
         success {
             echo 'Build thành công!'
         }
