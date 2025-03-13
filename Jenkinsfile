@@ -12,30 +12,24 @@ pipeline {
             }
         }
         
-stage('Detect Changes') {
-    steps {
-        script {
-            def changedFiles = sh(script: "git diff --name-only ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT} ${env.GIT_COMMIT}", returnStdout: true).trim()
-            echo "${changedFiles}"
-            if (changedFiles) {
-                def changedModules = changedFiles
-                    .split("\n")
-                    .collect { it.split('/')[0] }  // Lấy thư mục cấp 1 (tên module)
-                    .unique()
-                    .findAll { it && it != 'Jenkinsfile' && it != 'pom.xml'}  // Loại bỏ Jenkinsfile nếu bị nhận diện nhầm
-                    .join(',')
-
-                env.MODULES_CHANGED = changedModules
-                echo "Modules to process: ${env.MODULES_CHANGED}"
-            } else {
-                // Không có thay đổi, dừng pipeline
-                echo "No changes detected - stopping pipeline."
-                currentBuild.result = 'ABORTED'
-                error('No changes detected')
+        stage('Detect Changes') {
+            steps {
+                script {
+                    def changedFiles = sh(script: "git diff --name-only origin/main", returnStdout: true).trim()
+                    echo "Changed files:\n${changedFiles}"
+        
+                    def changedModules = changedFiles
+                        .split("\n")
+                        .collect { it.split('/')[0] }  // Lấy thư mục cấp 1 (tên module)
+                        .unique()
+                        .findAll { it && it != 'Jenkinsfile' }  // Loại bỏ Jenkinsfile nếu bị nhận diện nhầm
+                        .join(',')
+        
+                    env.MODULES_CHANGED = changedModules
+                    echo "Modules to process: ${env.MODULES_CHANGED}"
+                }
             }
         }
-    }
-}
 
 
 
