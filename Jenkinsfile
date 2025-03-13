@@ -63,8 +63,10 @@ pipeline {
                                 execPattern: '**/target/jacoco.exec',
                                 classPattern: '**/target/classes',
                                 sourcePattern: '**/src/main/java',
-                                inclusionPattern: "org/springframework/samples/petclinic/**/*"
+                                inclusionPattern: "org/springframework/samples/petclinic/**/*",
+                                exclusionPattern: "org/springframework/samples/petclinic/example/**/*"
                             )
+
 
 
                         }
