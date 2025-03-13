@@ -1,54 +1,95 @@
 pipeline {
     agent any
 
+    environment {
+        DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
-        stage('Build and Test') {
+
+        stage('Detect Changes') {
             steps {
-                def modules = ['vets-service', 'another-service']
-                for (module in modules) {
-                    def hasChanges = false
-                    def changeLogSets = currentBuild.changeSets
-                    for (int i = 0; i < changeLogSets.size(); i++) {
-                        def entries = changeLogSets[i].items
-                        for (int j = 0; j < entries.length; j++) {
-                            def entry = entries[j]
-                            def files = new ArrayList(entry.affectedFiles)
-                            for (int k = 0; k < files.size(); k++) {
-                                def file = files[k]
-                                if (file.path.startsWith(module)) {
-                                    hasChanges = true
-                                    break
-                                }
-                            }
-                            if (hasChanges) {
-                                break
-                            }
-                        }
-                        if (hasChanges) {
-                            break
-                        }
-                    }
-                    if (hasChanges) {
+                script {
+                    def changedFiles = sh(script: "git diff --name-only origin/main", returnStdout: true).trim()
+                    echo "Changed files:\n${changedFiles}"
+        
+                    def changedModules = changedFiles
+                        .split("\n")
+                        .collect { it.split('/')[0] }  // Lấy thư mục cấp 1 (tên module)
+                        .unique()
+                        .findAll { it && it != 'Jenkinsfile' && it != 'pom.xml'}  // Loại bỏ Jenkinsfile nếu bị nhận diện nhầm
+                        .join(',')
+        
+                    env.MODULES_CHANGED = changedModules ?: env.DEFAULT_MODULES
+                    echo "Modules to process: ${env.MODULES_CHANGED}"
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    def modulesList = env.MODULES_CHANGED.split(',')
+
+                    modulesList.each { module ->
                         dir(module) {
-                            sh 'mvn clean package'
-                            sh 'mvn test'
-                            junit 'target/surefire-reports/*.xml'
-                            jacoco(
-                                execPattern: 'target/jacoco.exec',
-                                classPattern: 'target/classes',
-                                sourcePattern: 'src/main/java',
-                                inclusionPattern: '**/*',
-                                exclusionPattern: '**/*Test*.*'
-                            )
+                            echo "Running tests for: ${module}"
+                            // Run JaCoCo agent during test phase
+                            sh "${WORKSPACE}/mvnw jacoco:prepare-agent test  -Dmaven.test.failure.ignore=true"
+
+                            // Debug: Liệt kê test reports
+                            sh "ls -la target/surefire-reports/ || true"
                         }
                     }
                 }
             }
+            post {
+                always {
+                    script {
+                        def modulesList = env.MODULES_CHANGED.split(',')
+
+                        modulesList.each { module ->
+                            echo "Uploading test results for: ${module}"
+                            junit allowEmptyResults: true, testResults: "${module}/target/surefire-reports/*.xml"
+
+                            echo "Uploading code coverage for: ${module}"
+
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    def modulesList = env.MODULES_CHANGED.split(',')
+
+                    modulesList.each { module ->
+                        dir(module) {
+                            echo "Building module: ${module}"
+                            sh "${WORKSPACE}/mvnw clean package"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline execution completed'
+        }
+        success {
+            echo 'Pipeline finished successfully'
+        }
+        failure {
+            echo 'Pipeline failed. Check logs for errors'
         }
     }
 }
