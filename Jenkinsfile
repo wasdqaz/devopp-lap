@@ -15,65 +15,28 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Build') {
-            when {
-                changeset "**/vets-service/*.*"
-            }
+        stage('Build and Test') {
             steps {
-                // Xây dựng dịch vụ vets-service
-                dir('vets-service') {
-                    sh 'mvn clean package'
-                }
-            }
-        }
-        stage('Test') {
-            when {
-                changeset "**/vets-service/*.*"
-            }
-            steps {
-                // Chạy test và upload kết quả test
-                dir('vets-service') {
-                    sh 'mvn test'
-                    // Upload kết quả test lên Jenkins
-                    junit 'target/surefire-reports/*.xml'
-                    // Cấu hình độ phủ test
-                    jacoco(
-                        execPattern: 'target/jacoco.exec',
-                        classPattern: 'target/classes',
-                        sourcePattern: 'src/main/java',
-                        inclusionPattern: '**/*',
-                        exclusionPattern: '**/*Test*.*'
-                    )
-                }
-            }
-        }
-        stage('Build') {
-            when {
-                changeset "**/another-service/*.*"
-            }
-            steps {
-                // Xây dựng dịch vụ khác
-                dir('another-service') {
-                    sh 'mvn clean package'
-                }
-            }
-        }
-        stage('Test') {
-            when {
-                changeset "**/another-service/*.*"
-            }
-            steps {
-                // Chạy test và upload kết quả test cho dịch vụ khác
-                dir('another-service') {
-                    sh 'mvn test'
-                    junit 'target/surefire-reports/*.xml'
-                    jacoco(
-                        execPattern: 'target/jacoco.exec',
-                        classPattern: 'target/classes',
-                        sourcePattern: 'src/main/java',
-                        inclusionPattern: '**/*',
-                        exclusionPattern: '**/*Test*.*'
-                    )
+                // Lặp qua các module và kiểm tra thay đổi
+                def modules = ['vets-service', 'another-service']
+                for (module in modules) {
+                    if (changeset "**/${module}/*.*") {
+                        dir(module) {
+                            // Build module
+                            sh 'mvn clean package'
+                            // Chạy test và upload kết quả test
+                            sh 'mvn test'
+                            junit 'target/surefire-reports/*.xml'
+                            // Cấu hình độ phủ test
+                            jacoco(
+                                execPattern: 'target/jacoco.exec',
+                                classPattern: 'target/classes',
+                                sourcePattern: 'src/main/java',
+                                inclusionPattern: '**/*',
+                                exclusionPattern: '**/*Test*.*'
+                            )
+                        }
+                    }
                 }
             }
         }
