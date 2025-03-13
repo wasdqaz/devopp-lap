@@ -39,7 +39,7 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
+                    def modulesList = env.DEFAULT_MODULES.split(',')
 
                     modulesList.each { module ->
                         dir(module) {
@@ -53,7 +53,7 @@ pipeline {
             post {
                 always {
                     script {
-                        def modulesList = env.MODULES_CHANGED.split(',')
+                        def modulesList = env.DEFAULT_MODULES.split(',')
 
                         modulesList.each { module ->
                             // Specify JaCoCo report pattern
@@ -74,7 +74,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
+                    def modulesList = env.DEFAULT_MODULES.split(',')
 
                     modulesList.each { module ->
                         dir(module) {
