@@ -74,7 +74,7 @@ pipeline {
                     modulesList.each { module ->
                         dir(module) {
                             echo "Building module: ${module}"
-                            sh "../mvnw"
+                            sh "${WORKSPACE}/mvnw package"
                         }
                     }
                 }
