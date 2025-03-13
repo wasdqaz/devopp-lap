@@ -31,7 +31,7 @@ pipeline {
             }
         }
 
-    stage('Test') {
+        stage('Test') {
             steps {
                 script {
                     def modulesList = env.MODULES_CHANGED.split(',')
@@ -39,7 +39,8 @@ pipeline {
                     modulesList.each { module ->
                         dir(module) {
                             echo "Running tests for: ${module}"
-                            sh "${WORKSPACE}/mvnw test --fail-at-end -Dmaven.test.failure.ignore=true"
+                            // Run JaCoCo agent during test phase
+                            sh "${WORKSPACE}/mvnw test jacoco:prepare-agent -Dmaven.test.failure.ignore=true"
 
                             // Debug: Liệt kê test reports
                             sh "ls -la target/surefire-reports/ || true"
@@ -57,33 +58,35 @@ pipeline {
                             junit allowEmptyResults: true, testResults: "${module}/target/surefire-reports/*.xml"
 
                             echo "Uploading code coverage for: ${module}"
-                            jacoco execPattern: "${module}/target/jacoco.exec"
+                            // Specify JaCoCo report pattern
+                            jacoco(
+                                execPattern: "${module}/target/jacoco.exec",
+                                classPattern: "${module}/target/classes",
+                                sourcePattern: "${module}/src/main/java",
+                                inclusionPattern: "com/**/*",
+                                exclusionPattern: "com/example/**/*"
+                            )
                         }
                     }
                 }
             }
         }
 
+        stage('Build') {
+            steps {
+                script {
+                    def modulesList = env.MODULES_CHANGED.split(',')
 
-
-    
-    stage('Build') {
-        steps {
-            script {
-                def modulesList = env.MODULES_CHANGED.split(',')
-    
-                modulesList.each { module ->
-                    dir(module) {
-                        echo "Building module: ${module}"
-                        sh "${WORKSPACE}/mvnw clean package"
+                    modulesList.each { module ->
+                        dir(module) {
+                            echo "Building module: ${module}"
+                            sh "${WORKSPACE}/mvnw clean package"
+                        }
                     }
                 }
             }
         }
     }
-}    
-
-
 
     post {
         always {
