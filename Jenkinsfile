@@ -40,7 +40,7 @@ pipeline {
                         dir(module) {
                             echo "Running tests for: ${module}"
                             // Run JaCoCo agent during test phase
-                            sh "../mvnw verify test -Pspringboot"
+                            sh "../mvnw clean verify -Pspringboot"
                         }
                     }
                 }
