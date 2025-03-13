@@ -40,10 +40,7 @@ pipeline {
                         dir(module) {
                             echo "Running tests for: ${module}"
                             // Run JaCoCo agent during test phase
-                            sh "${WORKSPACE}/mvnw jacoco:prepare-agent test  -Dmaven.test.failure.ignore=true"
-
-                            // Debug: Liệt kê test reports
-                            sh "ls -la target/surefire-reports/ || true"
+                            sh "${WORKSPACE}/mvnw jacoco:prepare-agent test  -Pspringboot"
                         }
                     }
                 }
@@ -54,10 +51,6 @@ pipeline {
                         def modulesList = env.MODULES_CHANGED.split(',')
 
                         modulesList.each { module ->
-                            echo "Uploading test results for: ${module}"
-                            junit allowEmptyResults: true, testResults: "${module}/target/surefire-reports/*.xml"
-
-                            echo "Uploading code coverage for: ${module}"
                             // Specify JaCoCo report pattern
                                     jacoco(
                                         execPattern: 'spring-petclinic-api-gateway/target/jacoco.exec',
