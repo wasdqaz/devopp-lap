@@ -22,7 +22,7 @@ pipeline {
                         .split("\n")
                         .collect { it.split('/')[0] }  // Lấy thư mục cấp 1 (tên module)
                         .unique()
-                        .findAll { it && it != 'Jenkinsfile' }  // Loại bỏ Jenkinsfile nếu bị nhận diện nhầm
+                        .findAll { it && it != 'Jenkinsfile' && it != 'pom.xml'}  // Loại bỏ Jenkinsfile nếu bị nhận diện nhầm
                         .join(',')
         
                     env.MODULES_CHANGED = changedModules ?: env.DEFAULT_MODULES
