@@ -1,105 +1,81 @@
 pipeline {
     agent any
 
-    environment {
-        DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
+    // Cấu hình để Jenkins quét và chạy pipeline cho từng branch
+    triggers {
+        // Sử dụng trigger tự động khi có thay đổi trong repo
+        // Bạn có thể cấu hình thời gian quét trong Jenkins UI
+        // tại phần "Scan Repository Triggers"
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
+                // Checkout code từ Git
                 checkout scm
             }
         }
-
-        stage('Detect Changes') {
-            steps {
-                script {
-                    def changedFiles = sh(script: "git diff --name-only origin/main", returnStdout: true).trim()
-                    echo "Changed files:\n${changedFiles}"
-        
-                    def changedModules = changedFiles
-                        .split("\n")
-                        .collect { it.split('/')[0] }  // Lấy thư mục cấp 1 (tên module)
-                        .unique()
-                        .findAll { it && it != 'Jenkinsfile' && it != 'pom.xml'}  // Loại bỏ Jenkinsfile nếu bị nhận diện nhầm
-                        .join(',')
-        
-                    env.MODULES_CHANGED = changedModules ?: env.DEFAULT_MODULES
-                    echo "Modules to process: ${env.MODULES_CHANGED}"
-                }
-            }
-        }
-
-        stage('Test') {
-            steps {
-                script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
-
-                    modulesList.each { module ->
-                        dir(module) {
-                            echo "Running tests for: ${module}"
-                            // Run JaCoCo agent during test phase
-                            sh "${WORKSPACE}/mvnw jacoco:prepare-agent test  -Dmaven.test.failure.ignore=true"
-
-                            // Debug: Liệt kê test reports
-                            sh "ls -la target/surefire-reports/ || true"
-                        }
-                    }
-                }
-            }
-            post {
-                always {
-                    script {
-                        def modulesList = env.MODULES_CHANGED.split(',')
-
-                        modulesList.each { module ->
-                            echo "Uploading test results for: ${module}"
-                            junit allowEmptyResults: true, testResults: "${module}/target/surefire-reports/*.xml"
-
-                            echo "Uploading code coverage for: ${module}"
-                            // Specify JaCoCo report pattern
-                            jacoco(
-                                execPattern: '**/target/jacoco.exec',
-                                classPattern: '**/target/classes',
-                                sourcePattern: '**/src/main/java',
-                                inclusionPattern: "org/springframework/samples/petclinic/**/*",
-                                exclusionPattern: "org/springframework/samples/petclinic/example/**/*"
-                            )
-
-
-
-                        }
-                    }
-                }
-            }
-        }
-
         stage('Build') {
+            when {
+                changeset "**/vets-service/*.*"
+            }
             steps {
-                script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
-
-                    modulesList.each { module ->
-                        dir(module) {
-                            echo "Building module: ${module}"
-                            sh "${WORKSPACE}/mvnw clean package"
-                        }
-                    }
+                // Xây dựng dịch vụ vets-service
+                dir('vets-service') {
+                    sh 'mvn clean package'
                 }
             }
         }
-    }
-
-    post {
-        always {
-            echo 'Pipeline execution completed'
+        stage('Test') {
+            when {
+                changeset "**/vets-service/*.*"
+            }
+            steps {
+                // Chạy test và upload kết quả test
+                dir('vets-service') {
+                    sh 'mvn test'
+                    // Upload kết quả test lên Jenkins
+                    junit 'target/surefire-reports/*.xml'
+                    // Cấu hình độ phủ test
+                    jacoco(
+                        execPattern: 'target/jacoco.exec',
+                        classPattern: 'target/classes',
+                        sourcePattern: 'src/main/java',
+                        inclusionPattern: '**/*',
+                        exclusionPattern: '**/*Test*.*'
+                    )
+                }
+            }
         }
-        success {
-            echo 'Pipeline finished successfully'
+        stage('Build') {
+            when {
+                changeset "**/another-service/*.*"
+            }
+            steps {
+                // Xây dựng dịch vụ khác
+                dir('another-service') {
+                    sh 'mvn clean package'
+                }
+            }
         }
-        failure {
-            echo 'Pipeline failed. Check logs for errors'
+        stage('Test') {
+            when {
+                changeset "**/another-service/*.*"
+            }
+            steps {
+                // Chạy test và upload kết quả test cho dịch vụ khác
+                dir('another-service') {
+                    sh 'mvn test'
+                    junit 'target/surefire-reports/*.xml'
+                    jacoco(
+                        execPattern: 'target/jacoco.exec',
+                        classPattern: 'target/classes',
+                        sourcePattern: 'src/main/java',
+                        inclusionPattern: '**/*',
+                        exclusionPattern: '**/*Test*.*'
+                    )
+                }
+            }
         }
     }
 }
