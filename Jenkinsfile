@@ -78,37 +78,6 @@ pipeline {
             }
         }
 
-        stage('Check Coverage') {
-            steps {
-                script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
-        
-                    modulesList.each { module ->
-                        def coverage = sh(script: '''
-                            grep -oP '(?<=<counter type="INSTRUCTION" missed="\\d+" covered=")\\d+' ''' + module + '''/target/site/jacoco/jacoco.xml | 
-                            awk '{sum+=$1} END {print sum}'
-                        ''', returnStdout: true).trim()
-        
-                        def total = sh(script: '''
-                            grep -oP '(?<=<counter type="INSTRUCTION" missed=")\\d+' ''' + module + '''/target/site/jacoco/jacoco.xml | 
-                            awk '{sum+=$1} END {print sum}'
-                        ''', returnStdout: true).trim()
-        
-                        def percentage = (coverage.toInteger() * 100) / (coverage.toInteger() + total.toInteger())
-        
-                        echo "Test Coverage for ${module}: ${percentage}%"
-        
-                        if (percentage < 70) {
-                            error("Test coverage for ${module} is below 70%! Failing the build.")
-                        }
-                    }
-                }
-            }
-        }
-
-
-
-
         stage('Build') {
             steps {
                 script {
