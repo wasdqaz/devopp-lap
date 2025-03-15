@@ -16,7 +16,7 @@ pipeline {
             steps {
                 script {
                     // Use git diff with pathspec filtering to exclude Jenkinsfile and pom.xml
-                    def changedFiles = sh(script: "git diff --name-only ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'", returnStdout: true).trim()
+                    def changedFiles = sh(script: "git diff --name-only ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'", returnStdout: true).trim()
                     
                     echo "Changed files:\n${changedFiles}"
                     
