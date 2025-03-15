@@ -70,7 +70,12 @@ class PetResourceTest {
         Pet pet = new Pet();
         pet.setId(3);
         pet.setName("Ghost");
-        // Không set type
+    
+        // Gán owner để tránh NullPointerException
+        Owner owner = new Owner();
+        owner.setFirstName("Test");
+        owner.setLastName("Owner");
+        pet.setOwner(owner);
     
         given(petRepository.findById(3)).willReturn(Optional.of(pet));
     
@@ -80,6 +85,7 @@ class PetResourceTest {
             .andExpect(jsonPath("$.name").value("Ghost"))
             .andExpect(jsonPath("$.type").doesNotExist());
     }
+
     
     @Test
     void shouldReturnJsonContentType() throws Exception {
