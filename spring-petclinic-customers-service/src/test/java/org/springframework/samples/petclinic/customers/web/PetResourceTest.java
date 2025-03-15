@@ -56,6 +56,40 @@ class PetResourceTest {
             .andExpect(jsonPath("$.name").value("Basil"))
             .andExpect(jsonPath("$.type.id").value(6));
     }
+    
+    @Test
+    void shouldReturnNotFoundWhenPetDoesNotExist() throws Exception {
+        given(petRepository.findById(999)).willReturn(Optional.empty());
+    
+        mvc.perform(get("/owners/2/pets/999").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound());
+    }
+    
+    @Test
+    void shouldGetPetWithNullType() throws Exception {
+        Pet pet = new Pet();
+        pet.setId(3);
+        pet.setName("Ghost");
+        // Không set type
+    
+        given(petRepository.findById(3)).willReturn(Optional.of(pet));
+    
+        mvc.perform(get("/owners/2/pets/3").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(3))
+            .andExpect(jsonPath("$.name").value("Ghost"))
+            .andExpect(jsonPath("$.type").doesNotExist());
+    }
+    
+    @Test
+    void shouldReturnJsonContentType() throws Exception {
+        Pet pet = setupPet();
+        given(petRepository.findById(2)).willReturn(Optional.of(pet));
+    
+        mvc.perform(get("/owners/2/pets/2").accept(MediaType.APPLICATION_JSON))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
 
     private Pet setupPet() {
         Owner owner = new Owner();
