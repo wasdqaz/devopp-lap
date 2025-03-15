@@ -171,6 +171,71 @@ class PetResourceTest {
             .andExpect(jsonPath("$.type.name").value("Dog"));
     }
 
+    @Test
+    void shouldGetPetWithTypeMissingId() throws Exception {
+        Pet pet = new Pet();
+        pet.setId(7);
+        pet.setName("NamelessID");
+    
+        PetType type = new PetType();
+        type.setName("Mystery"); // Không set ID
+        pet.setType(type);
+    
+        Owner owner = new Owner();
+        owner.setFirstName("Someone");
+        owner.setLastName("Important");
+        pet.setOwner(owner);
+    
+        given(petRepository.findById(7)).willReturn(Optional.of(pet));
+    
+        mvc.perform(get("/owners/2/pets/7").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(7))
+            .andExpect(jsonPath("$.type.name").value("Mystery"))
+            .andExpect(jsonPath("$.type.id").doesNotExist());
+    }
+
+    @Test
+    void shouldHandleOwnerWithoutFirstName() throws Exception {
+        Pet pet = new Pet();
+        pet.setId(8);
+        pet.setName("OnlyLast");
+    
+        PetType type = new PetType();
+        type.setId(10);
+        type.setName("Lizard");
+        pet.setType(type);
+    
+        Owner owner = new Owner();
+        owner.setLastName("Solo"); // Không set FirstName
+        pet.setOwner(owner);
+    
+        given(petRepository.findById(8)).willReturn(Optional.of(pet));
+    
+        mvc.perform(get("/owners/2/pets/8").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(8))
+            .andExpect(jsonPath("$.type.name").value("Lizard"));
+    }
+
+    @Test
+    void shouldReturn500WhenOwnerIsNull() throws Exception {
+        Pet pet = new Pet();
+        pet.setId(9);
+        pet.setName("Orphan");
+    
+        PetType type = new PetType();
+        type.setId(11);
+        type.setName("Wolf");
+        pet.setType(type);
+    
+        // Không set owner
+        given(petRepository.findById(9)).willReturn(Optional.of(pet));
+    
+        mvc.perform(get("/owners/2/pets/9").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().is5xxServerError());
+    }
+
 
     private Pet setupPet() {
         Owner owner = new Owner();
