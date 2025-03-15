@@ -62,15 +62,16 @@ pipeline {
                         def modulesList = env.MODULES_CHANGED.split(',')
 
                         modulesList.each { module ->
-                            // Specify JaCoCo report pattern
-                                    jacoco(
-                                        execPattern: 'spring-petclinic-api-gateway/target/jacoco.exec',
-                                        classPattern: 'spring-petclinic-api-gateway/target/classes',
-                                        sourcePattern: 'spring-petclinic-api-gateway/src/main/java',
-                                        exclusionPattern: 'spring-petclinic-api-gateway/src/test*'
-                                    )
-
-
+                            dir(module) {
+                                echo "📊 Analyzing JaCoCo coverage for: ${module}"
+                                // Dùng jacoco plugin trong module tương ứng
+                                jacoco(
+                                    execPattern: 'target/jacoco.exec',
+                                    classPattern: 'target/classes',
+                                    sourcePattern: 'src/main/java',
+                                    exclusionPattern: 'src/test*'
+                                )
+                            }
                         }
                     }
                 }
