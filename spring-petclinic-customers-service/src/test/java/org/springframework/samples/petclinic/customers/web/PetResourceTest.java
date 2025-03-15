@@ -219,22 +219,30 @@ class PetResourceTest {
     }
 
     @Test
-    void shouldReturn500WhenOwnerIsNull() throws Exception {
+    void shouldGetPetWithTypeNameButNullTypeId() throws Exception {
         Pet pet = new Pet();
-        pet.setId(9);
-        pet.setName("Orphan");
+        pet.setId(10);
+        pet.setName("Choco");
     
         PetType type = new PetType();
-        type.setId(11);
-        type.setName("Wolf");
+        type.setName("Tiger"); // Không set ID
         pet.setType(type);
     
-        // Không set owner
-        given(petRepository.findById(9)).willReturn(Optional.of(pet));
+        Owner owner = new Owner();
+        owner.setFirstName("Alex");
+        owner.setLastName("Jungle");
+        pet.setOwner(owner);
     
-        mvc.perform(get("/owners/2/pets/9").accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().is5xxServerError());
+        given(petRepository.findById(10)).willReturn(Optional.of(pet));
+    
+        mvc.perform(get("/owners/2/pets/10").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(10))
+            .andExpect(jsonPath("$.name").value("Choco"))
+            .andExpect(jsonPath("$.type.name").value("Tiger"))
+            .andExpect(jsonPath("$.type.id").doesNotExist());
     }
+
 
 
     private Pet setupPet() {
