@@ -96,6 +96,81 @@ class PetResourceTest {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
 
+    @Test
+    void shouldGetPetWithNullTypeName() throws Exception {
+        Pet pet = new Pet();
+        pet.setId(4);
+        pet.setName("NoNameType");
+    
+        PetType petType = new PetType();
+        petType.setId(7); // Có id
+        pet.setType(petType); // Nhưng không set name
+    
+        Owner owner = new Owner();
+        owner.setFirstName("Anonymous");
+        owner.setLastName("Owner");
+        pet.setOwner(owner);
+    
+        given(petRepository.findById(4)).willReturn(Optional.of(pet));
+    
+        mvc.perform(get("/owners/2/pets/4").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(4))
+            .andExpect(jsonPath("$.type.id").value(7))
+            .andExpect(jsonPath("$.type.name").doesNotExist());
+    }
+
+    @Test
+    void shouldReturnPetEvenIfNotInOwnerPetsList() throws Exception {
+        Owner owner = new Owner();
+        owner.setFirstName("John");
+        owner.setLastName("Doe");
+    
+        Pet pet = new Pet();
+        pet.setId(5);
+        pet.setName("StrayCat");
+    
+        PetType type = new PetType();
+        type.setId(9);
+        type.setName("Cat");
+        pet.setType(type);
+    
+        pet.setOwner(owner);
+        // Không gọi owner.addPet(pet); để mô phỏng trường hợp pet không nằm trong danh sách
+    
+        given(petRepository.findById(5)).willReturn(Optional.of(pet));
+    
+        mvc.perform(get("/owners/2/pets/5").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(5))
+            .andExpect(jsonPath("$.name").value("StrayCat"))
+            .andExpect(jsonPath("$.type.name").value("Cat"));
+    }
+
+    @Test
+    void shouldHandleOwnerWithoutLastName() throws Exception {
+        Pet pet = new Pet();
+        pet.setId(6);
+        pet.setName("NoLastName");
+    
+        PetType petType = new PetType();
+        petType.setId(8);
+        petType.setName("Dog");
+        pet.setType(petType);
+    
+        Owner owner = new Owner();
+        owner.setFirstName("OnlyFirst"); // Không setLastName
+        pet.setOwner(owner);
+    
+        given(petRepository.findById(6)).willReturn(Optional.of(pet));
+    
+        mvc.perform(get("/owners/2/pets/6").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(6))
+            .andExpect(jsonPath("$.name").value("NoLastName"))
+            .andExpect(jsonPath("$.type.name").value("Dog"));
+    }
+
 
     private Pet setupPet() {
         Owner owner = new Owner();
