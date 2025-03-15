@@ -12,34 +12,33 @@ pipeline {
             }
         }
         
-        stage('Detect Changes') {
+       stage('Detect Changes') {
             steps {
                 script {
-                    // Use git diff with pathspec filtering to exclude Jenkinsfile and pom.xml
-                    def changedFiles = sh(script: "git diff --name-only ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'", returnStdout: true).trim()
-                    
+                    // Kiểm tra nếu `GIT_PREVIOUS_SUCCESSFUL_COMMIT` bị null, thay bằng HEAD~1
+                    def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
+                    def changedFiles = sh(script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'", returnStdout: true).trim()
+        
                     echo "Changed files:\n${changedFiles}"
-                    
+        
                     if (changedFiles) {
                         def changedModules = changedFiles
                             .split("\n")
-                            .collect { it.split('/')[0] }  // Extract top-level directory (module name)
+                            .collect { it.split('/')[0] } // Lấy thư mục cấp 1
                             .unique()
-                            .findAll { it }  // Filter out empty values
+                            .findAll { it } // Lọc bỏ giá trị rỗng
                             .join(',')
         
                         env.MODULES_CHANGED = changedModules
                         echo "Modules to process: ${env.MODULES_CHANGED}"
                     } else {
-                        // Stop pipeline gracefully if no changes are detected
                         echo "No changes detected - stopping pipeline."
                         currentBuild.result = 'ABORTED'
-                        return // Exit the stage without marking it as failed
+                        return
                     }
                 }
             }
         }
-
 
 
 
