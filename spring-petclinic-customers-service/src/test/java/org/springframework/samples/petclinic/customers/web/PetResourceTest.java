@@ -319,6 +319,56 @@ class PetResourceTest {
             .andExpect(jsonPath("$[1].name").value("Dog"));
     }
 
+    @Test
+    void testPetsAreEqual() {
+        Pet pet1 = new Pet();
+        pet1.setId(1);
+        pet1.setName("Buddy");
+        pet1.setBirthDate(new Date());
+        pet1.setType(new PetType());
+        pet1.setOwner(new Owner());
+
+        Pet pet2 = new Pet();
+        pet2.setId(1);
+        pet2.setName("Buddy");
+        pet2.setBirthDate(pet1.getBirthDate());
+        pet2.setType(pet1.getType());
+        pet2.setOwner(pet1.getOwner());
+
+        assertEquals(pet1, pet2);
+    }
+
+    @Test
+    void testPetsAreNotEqual() {
+        Pet pet1 = new Pet();
+        pet1.setId(1);
+        pet1.setName("Buddy");
+
+        Pet pet2 = new Pet();
+        pet2.setId(2);
+        pet2.setName("Max");
+
+        assertNotEquals(pet1, pet2);
+    }
+
+    @Test
+    void testEqualsWithNull() {
+        Pet pet = new Pet();
+        assertNotEquals(pet, null);
+    }
+
+    @Test
+    void testEqualsWithDifferentClass() {
+        Pet pet = new Pet();
+        assertNotEquals(pet, "some string");
+    }
+
+    @Test
+    void testEqualsWithSameObject() {
+        Pet pet = new Pet();
+        assertEquals(pet, pet);
+    }
+
     private Pet setupPet() {
         Owner owner = new Owner();
         owner.setFirstName("George");
