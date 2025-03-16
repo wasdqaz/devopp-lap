@@ -10,9 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.samples.petclinic.customers.model.Owner;
 import org.springframework.samples.petclinic.customers.model.OwnerRepository;
-import org.springframework.samples.petclinic.customers.model.Pet;
-import org.springframework.samples.petclinic.customers.model.PetRepository;
-import org.springframework.samples.petclinic.customers.model.PetType;
+import org.springframework.samples.petclinic.customers.web.mapper.OwnerEntityMapper;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -39,7 +37,7 @@ class OwnerResourceTest {
     OwnerRepository ownerRepository;
 
     @MockBean
-    OwnerEntityMapper ownerEntityMapper; // ✅ thêm dòng này để Spring inject được vào controller
+    OwnerEntityMapper ownerEntityMapper;
 
     @Test
     void shouldReturnOwnerInJsonFormat() throws Exception {
