@@ -126,4 +126,22 @@ class OwnerResourceTest {
             .andExpect(jsonPath("$[0].id").value(1))
             .andExpect(jsonPath("$[0].firstName").value("John"));
     }
+
+    @Test
+    void shouldCoverOwnerSettersAndNullPetsInternalBranch() {
+        Owner owner = new Owner();
+        owner.setAddress("456 New St");
+        owner.setCity("Another City");
+        owner.setTelephone("0987654321");
+    
+        // Kiểm tra các setter không bị lỗi
+        assert owner.getAddress().equals("456 New St");
+        assert owner.getCity().equals("Another City");
+        assert owner.getTelephone().equals("0987654321");
+    
+        // Dùng Reflection để set pets = null → test nhánh null trong getPetsInternal()
+        ReflectionTestUtils.setField(owner, "pets", null);
+        assert owner.getPetsInternal() != null; // vì getPetsInternal sẽ tạo new HashSet nếu null
+    }
+
 }
