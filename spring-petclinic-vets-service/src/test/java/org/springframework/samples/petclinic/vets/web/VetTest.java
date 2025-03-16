@@ -33,6 +33,7 @@ class VetTest {
 
     @Test
     void testSetAndGetName() {
+        // Kiểm tra setName và getName
         vet.setName("Dr. John Doe");
         assertEquals("Dr. John Doe", vet.getName(), "Vet name should be Dr. John Doe");
     }
