@@ -52,7 +52,9 @@ public class VetTest {
         }
 
         public void addSpecialty(Specialty specialty) {
-            this.specialties.add(specialty);
+            if (specialty != null) {
+                this.specialties.add(specialty);
+            }
         }
 
         // Thêm phương thức đếm số lượng specialty
