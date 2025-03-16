@@ -27,11 +27,27 @@ class MetricConfigTest {
     void testMetricsCommonTagsBeanExists() {
         assertThat(meterRegistry).isNotNull();
         assertThat(meterRegistry).isInstanceOf(SimpleMeterRegistry.class);
+        assertThat(meterRegistry.config().commonTags()).isNotEmpty(); // Kiểm tra commonTags có được set không
     }
 
     @Test
     void testTimedAspectBeanExists() {
         assertThat(timedAspect).isNotNull();
+    }
+
+    @Test
+    void testMetricConfig_BeanCreation() {
+        MetricConfig metricConfig = new MetricConfig();
+        MeterRegistry registry = new SimpleMeterRegistry();
+        
+        // Kiểm tra bean metricsCommonTags()
+        MeterRegistryCustomizer<MeterRegistry> customizer = metricConfig.metricsCommonTags();
+        customizer.customize(registry);
+        assertThat(registry.config().commonTags()).contains("application", "petclinic");
+
+        // Kiểm tra bean timedAspect()
+        TimedAspect aspect = metricConfig.timedAspect(registry);
+        assertThat(aspect).isNotNull();
     }
 
     @TestConfiguration
