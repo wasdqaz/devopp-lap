@@ -14,6 +14,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.samples.petclinic.customers.config.MetricConfig;
 import org.springframework.samples.petclinic.customers.model.*;
+import org.springframework.samples.petclinic.customers.repository.OwnerRepository;
+import org.springframework.samples.petclinic.customers.repository.PetRepository;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
@@ -26,25 +28,45 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = {MetricConfig.class, MetricConfigTest.TestConfig.class})
-class MetricConfigTest {
+@SpringBootTest(classes = {MetricConfig.class, CustomersServiceTests.TestConfig.class})
+class CustomersServiceTests {
+
     @Autowired
     private MeterRegistry meterRegistry;
 
     @Autowired
     private TimedAspect timedAspect;
 
+    @Autowired
+    private MetricConfig metricConfig;
+
+    /*** 🟢 TEST MetricConfig ***/
     @Test
-    void testMetricsCommonTagsBeanExists() {
-        assertThat(meterRegistry).isNotNull();
-        assertThat(meterRegistry).isInstanceOf(SimpleMeterRegistry.class);
+    void testMetricConfigBeans() {
+        MeterRegistry registry = metricConfig.meterRegistry();
+        assertNotNull(registry);
+        assertTrue(registry instanceof SimpleMeterRegistry);
     }
 
     @Test
-    void testTimedAspectBeanExists() {
-        assertThat(timedAspect).isNotNull();
+    void testTimedAspect() {
+        TimedAspect aspect = metricConfig.timedAspect(meterRegistry);
+        assertNotNull(aspect);
     }
 
+    /*** 🟢 TEST CustomersServiceApplication ***/
+    @Test
+    void mainMethodShouldRunWithoutExceptions() {
+        try (MockedStatic<SpringApplication> mockedStatic = Mockito.mockStatic(SpringApplication.class)) {
+            mockedStatic.when(() -> SpringApplication.run(CustomersServiceApplication.class, new String[]{}))
+                        .thenReturn(null);
+
+            assertDoesNotThrow(() -> CustomersServiceApplication.main(new String[]{}));
+            mockedStatic.verify(() -> SpringApplication.run(CustomersServiceApplication.class, new String[]{}), Mockito.times(1));
+        }
+    }
+
+    /*** 🔹 TEST CONFIGURATION ***/
     @TestConfiguration
     static class TestConfig {
         @Bean
@@ -54,21 +76,12 @@ class MetricConfigTest {
     }
 }
 
-class CustomersServiceApplicationTest {
-    @Test
-    void mainMethodShouldRunWithoutExceptions() {
-        try (MockedStatic<SpringApplication> mockedStatic = Mockito.mockStatic(SpringApplication.class)) {
-            assertDoesNotThrow(() -> CustomersServiceApplication.main(new String[]{}));
-            mockedStatic.verify(() -> SpringApplication.run(CustomersServiceApplication.class, new String[]{}), Mockito.times(1));
-        }
-    }
-}
-
 @DataJpaTest
 class OwnerRepositoryTest {
     @Autowired
     private OwnerRepository ownerRepository;
 
+    /*** 🟢 TEST OwnerRepository ***/
     @Test
     void testSaveAndFindOwner() {
         Owner owner = new Owner();
@@ -110,6 +123,7 @@ class PetRepositoryTest {
     @Autowired
     private TestEntityManager entityManager;
 
+    /*** 🟢 TEST PetRepository ***/
     @Test
     void testSaveAndFindPet() {
         Pet pet = new Pet();
@@ -156,6 +170,7 @@ class PetRepositoryTest {
     }
 }
 
+/*** 🟢 TEST ENTITY - Owner ***/
 class OwnerTest {
     @Test
     void testOwnerSettersAndGetters() {
@@ -174,6 +189,7 @@ class OwnerTest {
     }
 }
 
+/*** 🟢 TEST ENTITY - Pet ***/
 class PetTest {
     @Test
     void testPetSettersAndGetters() {
@@ -199,6 +215,7 @@ class PetTest {
     }
 }
 
+/*** 🟢 TEST ENTITY - PetType ***/
 class PetTypeTest {
     @Test
     void testPetTypeSettersAndGetters() {
