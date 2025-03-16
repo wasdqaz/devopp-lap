@@ -19,6 +19,17 @@
         <docker.image.dockerfile.dir>${basedir}/../docker</docker.image.dockerfile.dir>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>spring-releases</id>
+            <url>https://repo.spring.io/release</url>
+        </repository>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Spring Boot -->
         <dependency>
@@ -117,7 +128,7 @@
         <dependency>
             <groupId>org.springframework.test</groupId>
             <artifactId>spring-test</artifactId>
-            <version>5.3.18</version> <!-- Specify version here -->
+            <version>5.3.22</version> <!-- Cập nhật phiên bản tại đây -->
             <scope>test</scope>
         </dependency>
     </dependencies>
