@@ -39,4 +39,34 @@ class SpecialtyTest {
         // Act & Assert
         assertEquals("Dentistry", specialty.getName());
     }
+
+    @Test
+    void testSetName() {
+        // Arrange
+        Specialty specialty = new Specialty("Cardiology");
+
+        // Act
+        specialty.setName("Neurology");
+
+        // Assert
+        assertEquals("Neurology", specialty.getName());
+    }
+
+    @Test
+    void testGetName() {
+        // Arrange
+        Specialty specialty = new Specialty("Pediatrics");
+
+        // Act & Assert
+        assertEquals("Pediatrics", specialty.getName());
+    }
+
+    @Test
+    void testSpecialtyDefaultConstructor() {
+        // Arrange
+        Specialty specialty = new Specialty(null);
+
+        // Act & Assert
+        assertNull(specialty.getName());
+    }
 }
