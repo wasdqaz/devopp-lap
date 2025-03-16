@@ -21,12 +21,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import org.springframework.test.util.ReflectionTestUtils;
 
 
 /**
@@ -251,17 +253,18 @@ class PetResourceTest {
     @Test
     void shouldCreatePetSuccessfully() throws Exception {
         Owner owner = new Owner();
-        owner.setId(1);
+        ReflectionTestUtils.setField(owner, "id", 1); // set id thay vì setId()
+    
         given(ownerRepository.findById(1)).willReturn(Optional.of(owner));
     
         PetType type = new PetType();
-        type.setId(2);
+        ReflectionTestUtils.setField(type, "id", 2);
         type.setName("Dog");
         given(petRepository.findPetTypeById(2)).willReturn(Optional.of(type));
     
         given(petRepository.save(any(Pet.class))).willAnswer(invocation -> {
             Pet p = invocation.getArgument(0);
-            p.setId(99);
+            ReflectionTestUtils.setField(p, "id", 99); // set id thông qua reflection
             return p;
         });
     
