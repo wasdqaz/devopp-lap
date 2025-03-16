@@ -9,7 +9,9 @@ import org.springframework.http.MediaType;
 import org.springframework.samples.petclinic.customers.model.Owner;
 import org.springframework.samples.petclinic.customers.model.OwnerRepository;
 import org.springframework.samples.petclinic.customers.web.mapper.OwnerEntityMapper;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
@@ -21,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(OwnerResource.class)
+@ActiveProfiles("test") // ✅ Bổ sung cấu hình test
 class OwnerResourceTest {
 
     @Autowired
@@ -42,14 +45,24 @@ class OwnerResourceTest {
 
         mvc.perform(post("/owners")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"firstName\":\"John\",\"lastName\":\"Doe\",\"address\":\"123 Main St\",\"city\":\"New York\",\"telephone\":\"1234567890\"}"))
+                .content("""
+                    {
+                        "firstName": "John",
+                        "lastName": "Doe",
+                        "address": "123 Main St",
+                        "city": "New York",
+                        "telephone": "1234567890"
+                    }
+                """))
             .andExpect(status().isCreated());
     }
 
     @Test
     void shouldFindOwnerById() throws Exception {
-        Owner owner = new Owner(); // Do NOT set ID manually
+        Owner owner = new Owner();
+        ReflectionTestUtils.setField(owner, "id", 1); // ✅ Gán ID để tránh lỗi null
         owner.setFirstName("Alice");
+
         given(ownerRepository.findById(1)).willReturn(Optional.of(owner));
 
         mvc.perform(get("/owners/1"))
@@ -60,9 +73,11 @@ class OwnerResourceTest {
     @Test
     void shouldFindAllOwners() throws Exception {
         Owner owner1 = new Owner();
+        ReflectionTestUtils.setField(owner1, "id", 1); // ✅ Gán ID
         owner1.setFirstName("Alice");
 
         Owner owner2 = new Owner();
+        ReflectionTestUtils.setField(owner2, "id", 2); // ✅ Gán ID
         owner2.setFirstName("Bob");
 
         given(ownerRepository.findAll()).willReturn(List.of(owner1, owner2));
@@ -76,17 +91,29 @@ class OwnerResourceTest {
     @Test
     void shouldUpdateOwner() throws Exception {
         Owner existingOwner = new Owner();
+        ReflectionTestUtils.setField(existingOwner, "id", 1); // ✅ Gán ID
         existingOwner.setFirstName("OldName");
 
         OwnerRequest request = new OwnerRequest("UpdatedName", "Doe", "456 Elm St", "Los Angeles", "9876543210");
+        Owner updatedOwner = new Owner();
+        ReflectionTestUtils.setField(updatedOwner, "id", 1); // ✅ Gán ID
+        updatedOwner.setFirstName("UpdatedName");
 
         given(ownerRepository.findById(1)).willReturn(Optional.of(existingOwner));
-        given(ownerRepository.save(any(Owner.class))).willReturn(existingOwner);
-        given(ownerEntityMapper.map(existingOwner, request)).willReturn(existingOwner); // ✅ Fix `doNothing()`
+        given(ownerEntityMapper.map(existingOwner, request)).willReturn(updatedOwner);
+        given(ownerRepository.save(any(Owner.class))).willReturn(updatedOwner);
 
         mvc.perform(put("/owners/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"firstName\":\"UpdatedName\",\"lastName\":\"Doe\",\"address\":\"456 Elm St\",\"city\":\"Los Angeles\",\"telephone\":\"9876543210\"}"))
+                .content("""
+                    {
+                        "firstName": "UpdatedName",
+                        "lastName": "Doe",
+                        "address": "456 Elm St",
+                        "city": "Los Angeles",
+                        "telephone": "9876543210"
+                    }
+                """))
             .andExpect(status().isNoContent());
     }
 }
