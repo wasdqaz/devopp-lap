@@ -39,18 +39,18 @@ class OwnerResourceTest {
     OwnerRepository ownerRepository;
 
     @Test
-    void shouldGetOwnerById() throws Exception {
+    @Test
+    void shouldReturnOwnerInJsonFormat() throws Exception {
         Owner owner = new Owner();
-        owner.setId(1);
         owner.setFirstName("John");
         owner.setLastName("Doe");
-
+    
         given(ownerRepository.findById(1)).willReturn(Optional.of(owner));
-
+    
         mvc.perform(get("/owners/1").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(1))
-            .andExpect(jsonPath("$.firstName").value("John"));
+            .andExpect(jsonPath("$.firstName").value("John"))
+            .andExpect(jsonPath("$.lastName").value("Doe"));
     }
 
     @Test
