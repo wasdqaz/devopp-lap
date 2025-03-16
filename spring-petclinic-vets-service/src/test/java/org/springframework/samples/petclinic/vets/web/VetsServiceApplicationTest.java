@@ -1,10 +1,10 @@
 package org.springframework.samples.petclinic.vets.web;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.springframework.samples.petclinic.vets.VetsServiceApplication;  // Đảm bảo import đúng class VetsServiceApplication
-
+@SpringBootTest(classes = VetsServiceApplication.class)  // Đảm bảo không khởi động server thực tế trong môi trường test
 class VetsServiceApplicationTest {
 
     @Test
