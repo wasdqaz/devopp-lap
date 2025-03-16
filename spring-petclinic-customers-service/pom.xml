@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?> 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -110,7 +110,6 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <profiles>
@@ -144,31 +143,16 @@
                                 <goals>
                                     <goal>report</goal>
                                 </goals>
-                            </execution>
-
-                            <!-- Bỏ phần kiểm tra threshold coverage -->
-                            <!--
-                            <execution>
-                                <id>check</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
                                 <configuration>
-                                    <rules>
-                                        <rule>
-                                            <element>BUNDLE</element> 
-                                            <limits>
-                                                <limit>
-                                                    <counter>LINE</counter>
-                                                    <value>COVEREDRATIO</value>
-                                                    <minimum>0.70</minimum>
-                                                </limit>
-                                            </limits>
-                                        </rule>
-                                    </rules>
+                                    <includes>
+                                        <include>org/springframework/samples/petclinic/customers/**</include>
+                                        <include>org/springframework/samples/petclinic/customers/config/**</include>
+                                        <include>org/springframework/samples/petclinic/customers/model/**</include>
+                                        <include>org/springframework/samples/petclinic/customers/web/**</include>
+                                        <include>org/springframework/samples/petclinic/customers/web/mapper/**</include>
+                                    </includes>
                                 </configuration>
                             </execution>
-                            -->
                         </executions>
                     </plugin>
                 </plugins>
