@@ -244,7 +244,73 @@ class PetResourceTest {
             .andExpect(jsonPath("$.type.id").doesNotExist());
     }
 
+    @Test
+    void shouldCreatePetSuccessfully() throws Exception {
+        Owner owner = new Owner();
+        owner.setId(1);
+        given(ownerRepository.findById(1)).willReturn(Optional.of(owner));
+    
+        PetType type = new PetType();
+        type.setId(2);
+        type.setName("Dog");
+        given(petRepository.findPetTypeById(2)).willReturn(Optional.of(type));
+    
+        given(petRepository.save(any(Pet.class))).willAnswer(invocation -> {
+            Pet p = invocation.getArgument(0);
+            p.setId(99);
+            return p;
+        });
+    
+        mvc.perform(post("/owners/1/pets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                    "name": "Rex",
+                    "birthDate": "2020-01-01",
+                    "typeId": 2
+                }
+            """))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(99))
+            .andExpect(jsonPath("$.name").value("Rex"))
+            .andExpect(jsonPath("$.type.id").value(2));
+    }
 
+    @Test
+    void shouldUpdatePetSuccessfully() throws Exception {
+        Pet pet = new Pet();
+        pet.setId(1);
+        given(petRepository.findById(1)).willReturn(Optional.of(pet));
+    
+        PetType type = new PetType();
+        type.setId(3);
+        given(petRepository.findPetTypeById(3)).willReturn(Optional.of(type));
+    
+        mvc.perform(put("/owners/any/pets/1")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                    "id": 1,
+                    "name": "UpdatedName",
+                    "birthDate": "2022-12-31",
+                    "typeId": 3
+                }
+            """))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldGetPetTypes() throws Exception {
+        PetType cat = new PetType(); cat.setId(1); cat.setName("Cat");
+        PetType dog = new PetType(); dog.setId(2); dog.setName("Dog");
+    
+        given(petRepository.findPetTypes()).willReturn(List.of(cat, dog));
+    
+        mvc.perform(get("/petTypes"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[1].name").value("Dog"));
+    }
 
     private Pet setupPet() {
         Owner owner = new Owner();
