@@ -1,5 +1,8 @@
 package org.springframework.samples.petclinic.customers.web;
 
+import java.util.Optional;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,84 +12,117 @@ import org.springframework.http.MediaType;
 import org.springframework.samples.petclinic.customers.model.Owner;
 import org.springframework.samples.petclinic.customers.model.OwnerRepository;
 import org.springframework.samples.petclinic.customers.web.mapper.OwnerEntityMapper;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Optional;
-import java.util.List;
 
-import static org.mockito.BDDMockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.test.util.ReflectionTestUtils;
 
+/**
+ * @author Maciej Szarlinski
+ */
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(OwnerResource.class)
+@ActiveProfiles("test")
 class OwnerResourceTest {
 
     @Autowired
-    private MockMvc mvc;
+    MockMvc mvc;
 
     @MockBean
-    private OwnerRepository ownerRepository;
+    OwnerRepository ownerRepository;
 
     @MockBean
-    private OwnerEntityMapper ownerEntityMapper;
+    OwnerEntityMapper ownerEntityMapper;
 
     @Test
-    void shouldCreateOwner() throws Exception {
-        OwnerRequest request = new OwnerRequest("John", "Doe", "123 Main St", "New York", "1234567890");
+    void shouldReturnOwnerInJsonFormat() throws Exception {
         Owner owner = new Owner();
+        owner.setFirstName("John");
+        owner.setLastName("Doe");
+    
+        given(ownerRepository.findById(1)).willReturn(Optional.of(owner));
+    
+        mvc.perform(get("/owners/1").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.firstName").value("John"))
+            .andExpect(jsonPath("$.lastName").value("Doe"));
+    }
 
-        given(ownerEntityMapper.map(any(Owner.class), any(OwnerRequest.class))).willReturn(owner);
-        given(ownerRepository.save(any(Owner.class))).willReturn(owner);
-
+    @Test
+    void shouldCreateOwnerSuccessfully() throws Exception {
+        OwnerRequest request = new OwnerRequest("John", "Doe", "123 Main St", "City", "123456789");
+    
+        Owner savedOwner = new Owner();
+        ReflectionTestUtils.setField(owner, "id", 1);
+    
+        given(ownerRepository.save(any(Owner.class))).willReturn(savedOwner);
+        given(ownerMapper.toOwner(any(OwnerRequest.class))).willReturn(savedOwner);
+    
         mvc.perform(post("/owners")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"firstName\":\"John\",\"lastName\":\"Doe\",\"address\":\"123 Main St\",\"city\":\"New York\",\"telephone\":\"1234567890\"}"))
-            .andExpect(status().isCreated());
+                .content("""
+                    {
+                        "firstName": "John",
+                        "lastName": "Doe",
+                        "address": "123 Main St",
+                        "city": "City",
+                        "telephone": "123456789"
+                    }
+                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.firstName").value("John"));
     }
 
     @Test
-    void shouldFindOwnerById() throws Exception {
-        Owner owner = new Owner(); // Do NOT set ID manually
-        owner.setFirstName("Alice");
-        given(ownerRepository.findById(1)).willReturn(Optional.of(owner));
-
-        mvc.perform(get("/owners/1"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.firstName").value("Alice"));
-    }
-
-    @Test
-    void shouldFindAllOwners() throws Exception {
-        Owner owner1 = new Owner();
-        owner1.setFirstName("Alice");
-
-        Owner owner2 = new Owner();
-        owner2.setFirstName("Bob");
-
-        given(ownerRepository.findAll()).willReturn(List.of(owner1, owner2));
-
-        mvc.perform(get("/owners"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].firstName").value("Alice"))
-            .andExpect(jsonPath("$[1].firstName").value("Bob"));
-    }
-
-    @Test
-    void shouldUpdateOwner() throws Exception {
+    void shouldUpdateOwnerSuccessfully() throws Exception {
         Owner existingOwner = new Owner();
+        existingOwner.setId(1);
         existingOwner.setFirstName("OldName");
-
-        OwnerRequest request = new OwnerRequest("UpdatedName", "Doe", "456 Elm St", "Los Angeles", "9876543210");
-
+    
+        Owner updatedOwner = new Owner();
+        updatedOwner.setId(1);
+        updatedOwner.setFirstName("NewName");
+    
         given(ownerRepository.findById(1)).willReturn(Optional.of(existingOwner));
-        given(ownerRepository.save(any(Owner.class))).willReturn(existingOwner);
-        given(ownerEntityMapper.map(existingOwner, request)).willReturn(existingOwner); // ✅ Fix `doNothing()`
-
+        given(ownerRepository.save(any(Owner.class))).willReturn(updatedOwner);
+        given(ownerMapper.toOwner(any(OwnerRequest.class))).willReturn(updatedOwner);
+    
         mvc.perform(put("/owners/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"firstName\":\"UpdatedName\",\"lastName\":\"Doe\",\"address\":\"456 Elm St\",\"city\":\"Los Angeles\",\"telephone\":\"9876543210\"}"))
-            .andExpect(status().isNoContent());
+                .content("""
+                    {
+                        "firstName": "NewName",
+                        "lastName": "Doe",
+                        "address": "New Address",
+                        "city": "New City",
+                        "telephone": "987654321"
+                    }
+                """))
+                .andExpect(status().isNoContent());
     }
+
+    @Test
+    void shouldReturnListOfOwners() throws Exception {
+        Owner owner = new Owner();
+        owner.setId(1);
+        owner.setFirstName("John");
+        List<Owner> owners = List.of(owner);
+    
+        given(ownerRepository.findAll()).willReturn(owners);
+    
+        mvc.perform(get("/owners"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].firstName").value("John"));
+    }
+
 }
