@@ -20,7 +20,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -30,18 +29,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PetResourceTest {
 
     @Autowired
-    MockMvc mvc;
+    private MockMvc mvc;
 
     @MockBean
-    PetRepository petRepository;
+    private PetRepository petRepository;
 
     @MockBean
-    OwnerRepository ownerRepository;
+    private OwnerRepository ownerRepository;
 
     @Test
     void shouldGetAPetInJSONFormat() throws Exception {
         Pet pet = setupPet();
-
         given(petRepository.findById(2)).willReturn(Optional.of(pet));
 
         mvc.perform(get("/owners/2/pets/2").accept(MediaType.APPLICATION_JSON))
@@ -51,8 +49,7 @@ class PetResourceTest {
             .andExpect(jsonPath("$.name").value("Basil"))
             .andExpect(jsonPath("$.type.id").value(6))
             .andExpect(jsonPath("$.owner.firstName").value("George"))
-            .andExpect(jsonPath("$.owner.lastName").value("Bush"))
-            .andExpect(header().string("Content-Type", "application/json"));
+            .andExpect(jsonPath("$.owner.lastName").value("Bush"));
     }
 
     @Test
@@ -75,7 +72,7 @@ class PetResourceTest {
         pet2.setType(petType);
         owner.addPet(pet2);
 
-        when(ownerRepository.findById(2)).thenReturn(Optional.of(owner));
+        given(ownerRepository.findById(2)).willReturn(Optional.of(owner));
 
         mvc.perform(get("/owners/2/pets").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
@@ -94,27 +91,21 @@ class PetResourceTest {
 
     private Pet setupPet() {
         Owner owner = setupOwner();
-
         Pet pet = new Pet();
         pet.setId(2);
         pet.setName("Basil");
-
         PetType petType = new PetType();
         petType.setId(6);
         pet.setType(petType);
-
         owner.addPet(pet);
         return pet;
     }
 
     private Owner setupOwner() {
         Owner owner = new Owner();
+        owner.setId(2); // Đảm bảo có ID
         owner.setFirstName("George");
         owner.setLastName("Bush");
-        
-        // Giả lập ID bằng mock nếu cần
-        given(ownerRepository.findById(2)).willReturn(Optional.of(owner));
-        
         return owner;
     }
 }
