@@ -39,4 +39,15 @@ public class Vet {
         return name;
     }
 
-    publ
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Set<Specialty> getSpecialties() {
+        return specialties;
+    }
+
+    public void addSpecialty(Specialty specialty) {
+        this.specialties.add(specialty);
+    }
+}
