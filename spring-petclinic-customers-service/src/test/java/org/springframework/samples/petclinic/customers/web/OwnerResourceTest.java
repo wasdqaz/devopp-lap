@@ -12,19 +12,23 @@ import org.springframework.http.MediaType;
 import org.springframework.samples.petclinic.customers.model.Owner;
 import org.springframework.samples.petclinic.customers.model.OwnerRepository;
 import org.springframework.samples.petclinic.customers.web.mapper.OwnerEntityMapper;
-import org.springframework.samples.petclinic.customers.web.OwnerRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Test for OwnerResource
+ */
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(OwnerResource.class)
 @ActiveProfiles("test")
@@ -61,7 +65,7 @@ class OwnerResourceTest {
         ReflectionTestUtils.setField(savedOwner, "id", 1);
         savedOwner.setFirstName("John");
 
-        given(ownerEntityMapper.toOwner(any(OwnerRequest.class))).willReturn(savedOwner);
+        given(ownerEntityMapper.map(any(Owner.class), any(OwnerRequest.class))).willReturn(savedOwner);
         given(ownerRepository.save(any(Owner.class))).willReturn(savedOwner);
 
         mvc.perform(post("/owners")
@@ -85,15 +89,15 @@ class OwnerResourceTest {
         Owner existingOwner = new Owner();
         ReflectionTestUtils.setField(existingOwner, "id", 1);
         existingOwner.setFirstName("OldName");
-    
+
         Owner updatedOwner = new Owner();
         ReflectionTestUtils.setField(updatedOwner, "id", 1);
         updatedOwner.setFirstName("NewName");
-    
+
         given(ownerRepository.findById(1)).willReturn(Optional.of(existingOwner));
         given(ownerEntityMapper.map(any(Owner.class), any(OwnerRequest.class))).willReturn(updatedOwner);
         given(ownerRepository.save(any(Owner.class))).willReturn(updatedOwner);
-    
+
         mvc.perform(put("/owners/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -113,8 +117,8 @@ class OwnerResourceTest {
         Owner owner = new Owner();
         ReflectionTestUtils.setField(owner, "id", 1);
         owner.setFirstName("John");
-
         List<Owner> owners = List.of(owner);
+
         given(ownerRepository.findAll()).willReturn(owners);
 
         mvc.perform(get("/owners"))
