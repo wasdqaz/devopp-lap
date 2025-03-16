@@ -1,8 +1,79 @@
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-class VetTest {
+import java.util.HashSet;
+import java.util.Set;
 
+// Đặt lớp Vet và Specialty ở đây
+public class VetTest {
+
+    static class Vet {
+        private Integer id;
+        private String firstName;
+        private String lastName;
+        private String name;
+        private Set<Specialty> specialties = new HashSet<>();
+
+        // Getters and setters
+        public Integer getId() {
+            return id;
+        }
+
+        public void setId(Integer id) {
+            this.id = id;
+        }
+
+        public String getFirstName() {
+            return firstName;
+        }
+
+        public void setFirstName(String firstName) {
+            this.firstName = firstName;
+        }
+
+        public String getLastName() {
+            return lastName;
+        }
+
+        public void setLastName(String lastName) {
+            this.lastName = lastName;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public Set<Specialty> getSpecialties() {
+            return specialties;
+        }
+
+        public void addSpecialty(Specialty specialty) {
+            this.specialties.add(specialty);
+        }
+
+        // Thêm phương thức đếm số lượng specialty
+        public int getNrOfSpecialties() {
+            return specialties.size();
+        }
+    }
+
+    static class Specialty {
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    // Các phương thức test
     @Test
     void testVetGettersAndSetters() {
         // Arrange
