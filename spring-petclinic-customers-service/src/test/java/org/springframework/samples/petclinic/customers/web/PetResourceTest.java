@@ -24,7 +24,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {MetricConfig.class, CustomersServiceTests.TestConfig.class})
@@ -68,6 +71,11 @@ class CustomersServiceTests {
         @Bean
         public MeterRegistry meterRegistry() {
             return new SimpleMeterRegistry();
+        }
+
+        @Bean
+        public TimedAspect timedAspect(MeterRegistry meterRegistry) {
+            return new TimedAspect(meterRegistry);
         }
     }
 }
