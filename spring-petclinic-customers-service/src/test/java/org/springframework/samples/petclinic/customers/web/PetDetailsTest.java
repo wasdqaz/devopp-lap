@@ -14,7 +14,7 @@ class PetDetailsTest {
     void testPetDetailsConstructor() {
         PetType type = new PetType();
         type.setId(1);
-        type.setName("Dog");
+        type.setName("Dogg");
 
         Owner owner = new Owner();
         owner.setFirstName("John");
@@ -32,6 +32,6 @@ class PetDetailsTest {
         assertEquals(1, petDetails.id());
         assertEquals("Buddy", petDetails.name());
         assertEquals("John Doe", petDetails.owner());
-        assertEquals("Dog", petDetails.type().getName());
+        assertEquals("Dogg", petDetails.type().getName());
     }
 }
