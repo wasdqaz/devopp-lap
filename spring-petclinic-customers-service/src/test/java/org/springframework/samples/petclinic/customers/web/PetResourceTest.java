@@ -12,10 +12,9 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.samples.petclinic.customers.config.MetricConfig;
 import org.springframework.samples.petclinic.customers.model.*;
-import org.springframework.samples.petclinic.customers.repository.OwnerRepository;
-import org.springframework.samples.petclinic.customers.repository.PetRepository;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
@@ -40,7 +39,6 @@ class CustomersServiceTests {
     @Autowired
     private MetricConfig metricConfig;
 
-    /*** 🟢 TEST MetricConfig ***/
     @Test
     void testMetricConfigBeans() {
         MeterRegistry registry = metricConfig.meterRegistry();
@@ -54,7 +52,6 @@ class CustomersServiceTests {
         assertNotNull(aspect);
     }
 
-    /*** 🟢 TEST CustomersServiceApplication ***/
     @Test
     void mainMethodShouldRunWithoutExceptions() {
         try (MockedStatic<SpringApplication> mockedStatic = Mockito.mockStatic(SpringApplication.class)) {
@@ -66,7 +63,6 @@ class CustomersServiceTests {
         }
     }
 
-    /*** 🔹 TEST CONFIGURATION ***/
     @TestConfiguration
     static class TestConfig {
         @Bean
@@ -76,12 +72,19 @@ class CustomersServiceTests {
     }
 }
 
+/*** 🟢 Định nghĩa repository ngay trong file này ***/
+interface OwnerRepository extends JpaRepository<Owner, Integer> {
+}
+
+interface PetRepository extends JpaRepository<Pet, Integer> {
+    List<PetType> findPetTypes();
+}
+
 @DataJpaTest
 class OwnerRepositoryTest {
     @Autowired
     private OwnerRepository ownerRepository;
 
-    /*** 🟢 TEST OwnerRepository ***/
     @Test
     void testSaveAndFindOwner() {
         Owner owner = new Owner();
@@ -123,7 +126,6 @@ class PetRepositoryTest {
     @Autowired
     private TestEntityManager entityManager;
 
-    /*** 🟢 TEST PetRepository ***/
     @Test
     void testSaveAndFindPet() {
         Pet pet = new Pet();
