@@ -1,14 +1,13 @@
 package org.springframework.samples.petclinic.customers;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.SpringApplication;
+import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
+@SpringBootTest
 class CustomersServiceApplicationTest {
 
     @Test
-    void main_shouldStartApplication() {
-        assertDoesNotThrow(() -> CustomersServiceApplication.main(new String[]{}));
+    void contextLoads() {
+        // Nếu context load thành công thì test sẽ pass
     }
 }
