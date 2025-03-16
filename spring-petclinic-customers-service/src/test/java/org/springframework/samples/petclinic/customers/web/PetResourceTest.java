@@ -109,9 +109,12 @@ class PetResourceTest {
 
     private Owner setupOwner() {
         Owner owner = new Owner();
-        owner.setId(2);
         owner.setFirstName("George");
         owner.setLastName("Bush");
+        
+        // Giả lập ID bằng mock nếu cần
+        given(ownerRepository.findById(2)).willReturn(Optional.of(owner));
+        
         return owner;
     }
 }
