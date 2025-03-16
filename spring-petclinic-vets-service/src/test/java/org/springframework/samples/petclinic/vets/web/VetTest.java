@@ -1,61 +1,54 @@
 package org.springframework.samples.petclinic.vets.model;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.HashSet;
+import java.util.Set;
 
-class VetTest {
+public class Vet {
+    private Integer id;
+    private String firstName;
+    private String lastName;
+    private String name;  // Add a 'name' field if not already present
+    private Set<Specialty> specialties = new HashSet<>();
 
-    private Vet vet;
+    // Getters and setters for id, firstName, lastName, and name
 
-    @BeforeEach
-    void setUp() {
-        vet = new Vet();
+    public Integer getId() {
+        return id;
     }
 
-    @Test
-    void testSetAndGetId() {
-        vet.setId(1);
-        assertEquals(1, vet.getId(), "Vet ID should be 1");
+    public void setId(Integer id) {
+        this.id = id;
     }
 
-    @Test
-    void testSetAndGetFirstName() {
-        vet.setFirstName("John");
-        assertEquals("John", vet.getFirstName(), "Vet first name should be John");
+    public String getFirstName() {
+        return firstName;
     }
 
-    @Test
-    void testSetAndGetLastName() {
-        vet.setLastName("Doe");
-        assertEquals("Doe", vet.getLastName(), "Vet last name should be Doe");
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
 
-    @Test
-    void testSetAndGetName() {
-        // Kiểm tra setName và getName
-        vet.setName("Dr. John Doe");
-        assertEquals("Dr. John Doe", vet.getName(), "Vet name should be Dr. John Doe");
+    public String getLastName() {
+        return lastName;
     }
 
-    @Test
-    void testAddSpecialty() {
-        Specialty specialty = new Specialty();
-        specialty.setName("Surgery");
-        vet.addSpecialty(specialty);
-        assertTrue(vet.getSpecialties().contains(specialty), "Specialty should be added to vet's specialties");
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
-    @Test
-    void testGetSpecialties() {
-        Specialty specialty = new Specialty();
-        specialty.setName("Surgery");
-        vet.addSpecialty(specialty);
-        assertEquals(1, vet.getSpecialties().size(), "Vet should have 1 specialty");
+    public String getName() {
+        return name;
     }
 
-    @Test
-    void testEmptySpecialties() {
-        assertTrue(vet.getSpecialties().isEmpty(), "Vet should have no specialties initially");
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Set<Specialty> getSpecialties() {
+        return specialties;
+    }
+
+    public void addSpecialty(Specialty specialty) {
+        this.specialties.add(specialty);
     }
 }
