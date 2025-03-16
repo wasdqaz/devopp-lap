@@ -118,4 +118,43 @@ public class VetTest {
         // Assert
         assertEquals(2, vet.getNrOfSpecialties());
     }
+
+    // Thêm test cho phương thức setFirstName
+    @Test
+    void testSetFirstName() {
+        // Arrange
+        Vet vet = new Vet();
+        
+        // Act
+        vet.setFirstName("Michael");
+        
+        // Assert
+        assertEquals("Michael", vet.getFirstName());
+    }
+
+    // Thêm test cho phương thức setLastName
+    @Test
+    void testSetLastName() {
+        // Arrange
+        Vet vet = new Vet();
+        
+        // Act
+        vet.setLastName("Smith");
+        
+        // Assert
+        assertEquals("Smith", vet.getLastName());
+    }
+
+    // Thêm test cho phương thức addSpecialty
+    @Test
+    void testAddSpecialtyWithNull() {
+        // Arrange
+        Vet vet = new Vet();
+        
+        // Act
+        vet.addSpecialty(null); // Test với null
+        
+        // Assert
+        assertEquals(0, vet.getNrOfSpecialties()); // Đảm bảo số lượng specialty vẫn là 0
+    }
 }
