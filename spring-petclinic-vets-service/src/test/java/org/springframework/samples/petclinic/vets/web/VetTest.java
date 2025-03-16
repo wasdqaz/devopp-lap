@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.HashSet;
 import java.util.Set;
 
-// Đặt lớp Vet và Specialty ở đây
+// Đặt lớp Vet 
 public class VetTest {
 
     static class Vet {
