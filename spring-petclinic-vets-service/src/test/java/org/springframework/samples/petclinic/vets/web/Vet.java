@@ -7,7 +7,7 @@ public class Vet {
     private Integer id;
     private String firstName;
     private String lastName;
-    private String name;  // Add a 'name' field if not already present
+    private String name;
     private Set<Specialty> specialties = new HashSet<>();
 
     // Getters and setters for id, firstName, lastName, and name
