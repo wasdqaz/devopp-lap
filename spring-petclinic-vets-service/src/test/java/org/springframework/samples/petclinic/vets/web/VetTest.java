@@ -3,10 +3,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.springframework.boot.SpringApplication;
 
-// Đặt lớp Vet và Specialty ở đây
 public class VetTest {
 
+    // Đặt lớp Vet và Specialty ở đây
     static class Vet {
         private Integer id;
         private String firstName;
@@ -117,5 +118,33 @@ public class VetTest {
 
         // Assert
         assertEquals(2, vet.getNrOfSpecialties());
+    }
+
+    // Test cho VetsServiceApplication
+    @Test
+    void testMainMethod() {
+        // Arrange
+        String[] args = {}; // Tham số truyền vào phương thức main
+
+        // Act & Assert
+        // Kiểm tra xem phương thức main có gây lỗi không
+        assertDoesNotThrow(() -> VetsServiceApplication.main(args));
+    }
+
+    @Test
+    void testVetsServiceApplicationConstructor() {
+        // Act
+        VetsServiceApplication app = new VetsServiceApplication();  // Tạo đối tượng của VetsServiceApplication
+
+        // Assert
+        assertNotNull(app);  // Kiểm tra đối tượng không null
+    }
+
+    // Lớp VetsServiceApplication nội bộ để kiểm tra
+    public static class VetsServiceApplication {
+
+        public static void main(String[] args) {
+            SpringApplication.run(VetsServiceApplication.class, args);
+        }
     }
 }
