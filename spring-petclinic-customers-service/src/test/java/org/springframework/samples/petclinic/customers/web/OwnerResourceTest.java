@@ -38,6 +38,9 @@ class OwnerResourceTest {
     @MockBean
     OwnerRepository ownerRepository;
 
+    @MockBean
+    OwnerEntityMapper ownerEntityMapper; // ✅ thêm dòng này để Spring inject được vào controller
+
     @Test
     void shouldReturnOwnerInJsonFormat() throws Exception {
         Owner owner = new Owner();
