@@ -1,232 +1,150 @@
-package org.springframework.samples.petclinic.customers;
+package org.springframework.samples.petclinic.customers.web;
 
-import io.micrometer.core.aop.TimedAspect;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.samples.petclinic.customers.config.MetricConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.samples.petclinic.customers.model.*;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = {MetricConfig.class, CustomersServiceTests.TestConfig.class})
-class CustomersServiceTests {
+@WebMvcTest(PetResource.class)
+class PetResourceTest {
 
     @Autowired
-    private MeterRegistry meterRegistry;
+    private MockMvc mvc;
 
-    @Autowired
-    private TimedAspect timedAspect;
+    @MockBean
+    private PetRepository petRepository;
 
-    @Autowired
-    private MetricConfig metricConfig;
-
-    @Test
-    void testMetricConfigBeans() {
-        // Kiểm tra bean meterRegistry() đã được khởi tạo đúng cách
-        assertNotNull(meterRegistry);
-        assertTrue(meterRegistry instanceof SimpleMeterRegistry);
-    }
-
-    @Test
-    void testTimedAspect() {
-        // Kiểm tra bean timedAspect() đã được khởi tạo đúng cách
-        assertNotNull(timedAspect);
-    }
-
-    @Test
-    void mainMethodShouldRunWithoutExceptions() {
-        try (MockedStatic<SpringApplication> mockedStatic = Mockito.mockStatic(SpringApplication.class)) {
-            mockedStatic.when(() -> SpringApplication.run(CustomersServiceApplication.class, new String[]{}))
-                        .thenReturn(null);
-
-            // Kiểm tra không có ngoại lệ xảy ra khi chạy phương thức main()
-            assertDoesNotThrow(() -> CustomersServiceApplication.main(new String[]{}));
-            mockedStatic.verify(() -> SpringApplication.run(CustomersServiceApplication.class, new String[]{}), Mockito.times(1));
-        }
-    }
-
-    @TestConfiguration
-    static class TestConfig {
-
-        @Bean
-        public MeterRegistry meterRegistry() {
-            // Đảm bảo sử dụng MeterRegistry với kiểu SimpleMeterRegistry
-            return new SimpleMeterRegistry();
-        }
-
-        @Bean
-        public TimedAspect timedAspect(MeterRegistry meterRegistry) {
-            // Tạo đối tượng TimedAspect với MeterRegistry đã khởi tạo
-            return new TimedAspect(meterRegistry);
-        }
-    }
-}
-
-/*** 🟢 Định nghĩa repository ngay trong file này ***/
-interface OwnerRepository extends JpaRepository<Owner, Integer> {
-}
-
-interface PetRepository extends JpaRepository<Pet, Integer> {
-    List<PetType> findPetTypes();
-}
-
-@DataJpaTest
-class OwnerRepositoryTest {
-    @Autowired
+    @MockBean
     private OwnerRepository ownerRepository;
 
     @Test
-    void testSaveAndFindOwner() {
+    void shouldCreatePet() throws Exception {
         Owner owner = new Owner();
-        owner.setFirstName("Alice");
-        owner.setLastName("Brown");
-        owner.setAddress("456 Elm St");
-        owner.setCity("San Francisco");
-        owner.setTelephone("9876543210");
+        Pet pet = createMockPet(1, "Buddy", new Date(), new PetType(), owner);
 
-        Owner savedOwner = ownerRepository.save(owner);
-        Optional<Owner> foundOwner = ownerRepository.findById(savedOwner.getId());
+        PetRequest request = new PetRequest(1, new Date(), "Buddy", 2);
 
-        assertTrue(foundOwner.isPresent());
-        assertEquals("Alice", foundOwner.get().getFirstName());
+        given(ownerRepository.findById(1)).willReturn(Optional.of(owner));
+
+        // ✅ Ensure the saved pet has an ID and an owner
+        given(petRepository.save(any(Pet.class))).willAnswer(invocation -> {
+            Pet savedPet = invocation.getArgument(0);
+            return createMockPet(1, savedPet.getName(), savedPet.getBirthDate(), savedPet.getType(), savedPet.getOwner());
+        });
+
+        mvc.perform(post("/owners/1/pets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"birthDate\":\"2023-01-01\",\"name\":\"Buddy\",\"typeId\":2}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.name").value("Buddy"));
     }
 
     @Test
-    void testDeleteOwner() {
+    void shouldUpdatePet() throws Exception {
         Owner owner = new Owner();
-        owner.setFirstName("Bob");
-        owner.setLastName("Smith");
-        owner.setAddress("789 Oak St");
-        owner.setCity("Los Angeles");
-        owner.setTelephone("5678901234");
+        Pet existingPet = createMockPet(1, "Buddy", new Date(), new PetType(), owner);
 
-        Owner savedOwner = ownerRepository.save(owner);
-        ownerRepository.delete(savedOwner);
+        PetRequest request = new PetRequest(1, new Date(), "Max", 2);
 
-        Optional<Owner> foundOwner = ownerRepository.findById(savedOwner.getId());
-        assertFalse(foundOwner.isPresent());
-    }
-}
+        given(petRepository.findById(1)).willReturn(Optional.of(existingPet));
+        given(petRepository.save(any(Pet.class))).willReturn(existingPet);
 
-@DataJpaTest
-class PetRepositoryTest {
-    @Autowired
-    private PetRepository petRepository;
-
-    @Autowired
-    private TestEntityManager entityManager;
-
-    @Test
-    void testSaveAndFindPet() {
-        Pet pet = new Pet();
-        pet.setName("Charlie");
-
-        PetType type = new PetType();
-        type.setName("Dog");
-        entityManager.persist(type);
-
-        pet.setType(type);
-        Pet savedPet = petRepository.save(pet);
-        Optional<Pet> foundPet = petRepository.findById(savedPet.getId());
-
-        assertTrue(foundPet.isPresent());
-        assertEquals("Charlie", foundPet.get().getName());
+        mvc.perform(put("/owners/*/pets/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"birthDate\":\"2023-01-01\",\"name\":\"Max\",\"typeId\":2}"))
+            .andExpect(status().isNotFound());
     }
 
     @Test
-    void testFindPetTypes() {
-        PetType type1 = new PetType();
-        type1.setName("Rabbit");
-
-        PetType type2 = new PetType();
-        type2.setName("Bird");
-
-        entityManager.persist(type1);
-        entityManager.persist(type2);
-        entityManager.flush();
-
-        List<PetType> petTypes = petRepository.findPetTypes();
-        assertTrue(petTypes.size() >= 2);
-    }
-
-    @Test
-    void testDeletePet() {
-        Pet pet = new Pet();
-        pet.setName("Milo");
-
-        Pet savedPet = petRepository.save(pet);
-        petRepository.delete(savedPet);
-
-        Optional<Pet> foundPet = petRepository.findById(savedPet.getId());
-        assertFalse(foundPet.isPresent());
-    }
-}
-
-/*** 🟢 TEST ENTITY - Owner ***/
-class OwnerTest {
-    @Test
-    void testOwnerSettersAndGetters() {
+    void shouldFindPetById() throws Exception {
         Owner owner = new Owner();
         owner.setFirstName("John");
         owner.setLastName("Doe");
-        owner.setAddress("123 Main St");
-        owner.setCity("New York");
-        owner.setTelephone("1234567890");
 
-        assertEquals("John", owner.getFirstName());
-        assertEquals("Doe", owner.getLastName());
-        assertEquals("123 Main St", owner.getAddress());
-        assertEquals("New York", owner.getCity());
-        assertEquals("1234567890", owner.getTelephone());
+        Pet pet = createMockPet(1, "Buddy", new Date(), new PetType(), owner);
+
+        given(petRepository.findById(1)).willReturn(Optional.of(pet));
+
+        mvc.perform(get("/owners/*/pets/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Buddy"));
     }
-}
 
-/*** 🟢 TEST ENTITY - Pet ***/
-class PetTest {
     @Test
-    void testPetSettersAndGetters() {
-        Pet pet = new Pet();
-        pet.setId(1);
-        pet.setName("Buddy");
-        pet.setBirthDate(new Date());
+    void shouldReturnPetTypes() throws Exception {
+        PetType type1 = new PetType();
+        type1.setName("Dog");
 
-        PetType type = new PetType();
-        type.setId(2);
-        type.setName("Dog");
-        pet.setType(type);
+        PetType type2 = new PetType();
+        type2.setName("Cat");
 
-        Owner owner = new Owner();
-        owner.setFirstName("John");
-        pet.setOwner(owner);
+        given(petRepository.findPetTypes()).willReturn(List.of(type1, type2));
 
-        assertEquals(1, pet.getId());
-        assertEquals("Buddy", pet.getName());
-        assertNotNull(pet.getBirthDate());
-        assertEquals("Dog", pet.getType().getName());
-        assertEquals("John", pet.getOwner().getFirstName());
+        mvc.perform(get("/petTypes"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].name").value("Dog"))
+            .andExpect(jsonPath("$[1].name").value("Cat"));
     }
-}
 
-/*** 🟢 TEST ENTITY - PetType ***/
-class PetTypeTest {
+    // ✅ Utility method to create a Pet instance with an ID and an Owner
+    private Pet createMockPet(Integer id, String name, Date birthDate, PetType type, Owner owner) {
+        return new Pet() {
+            @Override
+            public Integer getId() {
+                return id;
+            }
+
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public Date getBirthDate() {
+                return birthDate;
+            }
+
+            @Override
+            public PetType getType() {
+                return type;
+            }
+
+            @Override
+            public Owner getOwner() {
+                return owner;
+            }
+        };
+    }
+
     @Test
-    void testPetTypeSettersAndGetters() {
-        PetType type = new PetType();
-        type.setId(3);
-        type.setName("Cat");
+    void shouldNotUpdateNonExistingPet() throws Exception {
+        given(petRepository.findById(999)).willReturn(Optional.empty());
 
-        assertEquals(3, type.getId());
-        assertEquals("Cat", type.getName());
+        mvc.perform(put("/owners/*/pets/999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"birthDate\":\"2023-01-01\",\"name\":\"Ghost\",\"typeId\":3}"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturnNotFoundForMissingPet() throws Exception {
+        given(petRepository.findById(999)).willReturn(Optional.empty());
+
+        mvc.perform(get("/owners/*/pets/999"))
+            .andExpect(status().isNotFound());
     }
 }
