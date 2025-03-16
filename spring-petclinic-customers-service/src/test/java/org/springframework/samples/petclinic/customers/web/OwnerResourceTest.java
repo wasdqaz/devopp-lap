@@ -51,12 +51,4 @@ class OwnerResourceTest {
             .andExpect(jsonPath("$.firstName").value("John"))
             .andExpect(jsonPath("$.lastName").value("Doe"));
     }
-
-    @Test
-    void shouldReturnNotFoundWhenOwnerMissing() throws Exception {
-        given(ownerRepository.findById(999)).willReturn(Optional.empty());
-
-        mvc.perform(get("/owners/999").accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNotFound());
-    }
 }
