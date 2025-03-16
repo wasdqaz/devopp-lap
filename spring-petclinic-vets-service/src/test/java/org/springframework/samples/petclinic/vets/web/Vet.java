@@ -11,7 +11,6 @@ public class Vet {
     private Set<Specialty> specialties = new HashSet<>();
 
     // Getters and setters for id, firstName, lastName, and name
-
     public Integer getId() {
         return id;
     }
@@ -40,15 +39,4 @@ public class Vet {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Set<Specialty> getSpecialties() {
-        return specialties;
-    }
-
-    public void addSpecialty(Specialty specialty) {
-        this.specialties.add(specialty);
-    }
-}
+    publ
