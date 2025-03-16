@@ -13,7 +13,8 @@ class VetsServiceApplicationTest {
         String[] args = {}; // Tham số truyền vào phương thức main
 
         // Act & Assert
-        assertDoesNotThrow(() -> VetsServiceApplication.main(args));  // Kiểm tra xem phương thức main có gây lỗi không
+        // Kiểm tra xem phương thức main có gây lỗi không
+        assertDoesNotThrow(() -> VetsServiceApplication.main(args));
     }
 
     @Test
