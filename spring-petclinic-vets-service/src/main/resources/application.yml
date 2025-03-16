@@ -7,8 +7,6 @@ spring:
     cache-names: vets
   profiles:
     active: production
-  server:
-    port: 8081  # Cổng được thay đổi ở đây
 
 ---
 spring:
@@ -16,5 +14,3 @@ spring:
     activate:
       on-profile: docker
     import: configserver:http://config-server:8888
-  server:
-    port: 8081  # Cổng cũng được thay đổi ở đây nếu chạy với profile docker
