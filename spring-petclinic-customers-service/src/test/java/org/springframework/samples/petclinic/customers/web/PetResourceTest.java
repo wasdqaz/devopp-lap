@@ -2,6 +2,7 @@ package org.springframework.samples.petclinic.customers.web;
 
 import java.util.Optional;
 import java.util.List;
+import java.util.Date;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
