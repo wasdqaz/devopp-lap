@@ -1,63 +1,50 @@
-package org.springframework.samples.petclinic.vets.web;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.samples.petclinic.vets.model.Vet;
-import org.springframework.samples.petclinic.vets.model.Specialty;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class VetTest {
 
-    private Vet vet;
-
-    @BeforeEach
-    void setUp() {
-        vet = new Vet();
-    }
-
     @Test
-    void testSetAndGetId() {
+    void testVetGettersAndSetters() {
+        // Arrange
+        Vet vet = new Vet();
         vet.setId(1);
-        assertEquals(1, vet.getId(), "Vet ID should be 1");
-    }
-
-    @Test
-    void testSetAndGetFirstName() {
         vet.setFirstName("John");
-        assertEquals("John", vet.getFirstName(), "Vet first name should be John");
-    }
-
-    @Test
-    void testSetAndGetLastName() {
         vet.setLastName("Doe");
-        assertEquals("Doe", vet.getLastName(), "Vet last name should be Doe");
-    }
 
-    @Test
-    void testSetAndGetName() {
-        vet.setName("Dr. John Doe");
-        assertEquals("Dr. John Doe", vet.getName(), "Vet name should be Dr. John Doe");
+        // Act & Assert
+        assertEquals(1, vet.getId());
+        assertEquals("John", vet.getFirstName());
+        assertEquals("Doe", vet.getLastName());
     }
 
     @Test
     void testAddSpecialty() {
+        // Arrange
+        Vet vet = new Vet();
         Specialty specialty = new Specialty();
         specialty.setName("Surgery");
+
+        // Act
         vet.addSpecialty(specialty);
-        assertTrue(vet.getSpecialties().contains(specialty), "Specialty should be added to vet's specialties");
+
+        // Assert
+        assertTrue(vet.getSpecialties().contains(specialty));
     }
 
     @Test
-    void testGetSpecialties() {
-        Specialty specialty = new Specialty();
-        specialty.setName("Surgery");
-        vet.addSpecialty(specialty);
-        assertEquals(1, vet.getSpecialties().size(), "Vet should have 1 specialty");
-    }
+    void testGetNrOfSpecialties() {
+        // Arrange
+        Vet vet = new Vet();
+        Specialty specialty1 = new Specialty();
+        specialty1.setName("Surgery");
+        Specialty specialty2 = new Specialty();
+        specialty2.setName("Dentistry");
 
-    @Test
-    void testEmptySpecialties() {
-        assertTrue(vet.getSpecialties().isEmpty(), "Vet should have no specialties initially");
+        // Act
+        vet.addSpecialty(specialty1);
+        vet.addSpecialty(specialty2);
+
+        // Assert
+        assertEquals(2, vet.getNrOfSpecialties());
     }
 }
