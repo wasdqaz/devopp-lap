@@ -128,20 +128,22 @@ class OwnerResourceTest {
     }
 
     @Test
-    void shouldCoverOwnerSettersAndNullPetsInternalBranch() {
+    void shouldCoverOwnerSettersAndPetsHandling() {
         Owner owner = new Owner();
         owner.setAddress("456 New St");
         owner.setCity("Another City");
         owner.setTelephone("0987654321");
     
-        // Kiểm tra các setter không bị lỗi
-        assert owner.getAddress().equals("456 New St");
-        assert owner.getCity().equals("Another City");
-        assert owner.getTelephone().equals("0987654321");
+        assertEquals("456 New St", owner.getAddress());
+        assertEquals("Another City", owner.getCity());
+        assertEquals("0987654321", owner.getTelephone());
     
-        // Dùng Reflection để set pets = null → test nhánh null trong getPetsInternal()
-        ReflectionTestUtils.setField(owner, "pets", null);
-        assert owner.getPetsInternal() != null; // vì getPetsInternal sẽ tạo new HashSet nếu null
+        // Test addPet và getPets để gián tiếp cover getPetsInternal
+        Pet pet = new Pet();
+        pet.setName("Fluffy");
+    
+        owner.addPet(pet);
+        assertFalse(owner.getPets().isEmpty());
+        assertTrue(owner.getPets().stream().anyMatch(p -> p.getName().equals("Fluffy")));
     }
-
 }
