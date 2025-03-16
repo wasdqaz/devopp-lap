@@ -22,7 +22,7 @@ class OwnerRequestTest {
         OwnerRequest req2 = new OwnerRequest("Tom", "Hanks", "789 Oak St", "Chicago", "3216549870");
 
         assertEquals(req1, req2); // Kiểm tra equals()
-        assertEquals(req1.hashCode(), req2.hashCode()); // Kiểm tra hashCode()
+        assertEquals(req1.hashCode(), req2.hashCode()); // Kiểm tra hashCode()...
     }
 
     @Test
