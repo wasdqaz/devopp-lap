@@ -103,7 +103,6 @@ class PetResourceTest {
 
     private Owner setupOwner() {
         Owner owner = new Owner();
-        owner.setId(2); // Đảm bảo có ID
         owner.setFirstName("George");
         owner.setLastName("Bush");
         return owner;
