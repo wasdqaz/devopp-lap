@@ -1,6 +1,7 @@
 package org.springframework.samples.petclinic.customers.web;
 
 import java.util.Optional;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,10 +18,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * @author Maciej Szarlinski
@@ -58,9 +61,7 @@ class OwnerResourceTest {
         OwnerRequest request = new OwnerRequest("John", "Doe", "123 Main St", "City", "123456789");
     
         Owner savedOwner = new Owner();
-        savedOwner.setId(1);
-        savedOwner.setFirstName("John");
-        savedOwner.setLastName("Doe");
+        ReflectionTestUtils.setField(owner, "id", 1);
     
         given(ownerRepository.save(any(Owner.class))).willReturn(savedOwner);
         given(ownerMapper.toOwner(any(OwnerRequest.class))).willReturn(savedOwner);
