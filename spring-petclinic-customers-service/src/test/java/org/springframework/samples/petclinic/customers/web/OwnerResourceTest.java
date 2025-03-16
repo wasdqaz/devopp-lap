@@ -52,4 +52,76 @@ class OwnerResourceTest {
             .andExpect(jsonPath("$.firstName").value("John"))
             .andExpect(jsonPath("$.lastName").value("Doe"));
     }
+
+    @Test
+    void shouldCreateOwnerSuccessfully() throws Exception {
+        OwnerRequest request = new OwnerRequest("John", "Doe", "123 Main St", "City", "123456789");
+    
+        Owner savedOwner = new Owner();
+        savedOwner.setId(1);
+        savedOwner.setFirstName("John");
+        savedOwner.setLastName("Doe");
+    
+        given(ownerRepository.save(any(Owner.class))).willReturn(savedOwner);
+        given(ownerMapper.toOwner(any(OwnerRequest.class))).willReturn(savedOwner);
+    
+        mvc.perform(post("/owners")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "firstName": "John",
+                        "lastName": "Doe",
+                        "address": "123 Main St",
+                        "city": "City",
+                        "telephone": "123456789"
+                    }
+                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.firstName").value("John"));
+    }
+
+    @Test
+    void shouldUpdateOwnerSuccessfully() throws Exception {
+        Owner existingOwner = new Owner();
+        existingOwner.setId(1);
+        existingOwner.setFirstName("OldName");
+    
+        Owner updatedOwner = new Owner();
+        updatedOwner.setId(1);
+        updatedOwner.setFirstName("NewName");
+    
+        given(ownerRepository.findById(1)).willReturn(Optional.of(existingOwner));
+        given(ownerRepository.save(any(Owner.class))).willReturn(updatedOwner);
+        given(ownerMapper.toOwner(any(OwnerRequest.class))).willReturn(updatedOwner);
+    
+        mvc.perform(put("/owners/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "firstName": "NewName",
+                        "lastName": "Doe",
+                        "address": "New Address",
+                        "city": "New City",
+                        "telephone": "987654321"
+                    }
+                """))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldReturnListOfOwners() throws Exception {
+        Owner owner = new Owner();
+        owner.setId(1);
+        owner.setFirstName("John");
+        List<Owner> owners = List.of(owner);
+    
+        given(ownerRepository.findAll()).willReturn(owners);
+    
+        mvc.perform(get("/owners"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].firstName").value("John"));
+    }
+
 }
