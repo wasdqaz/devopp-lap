@@ -1,48 +1,212 @@
-package org.springframework.samples.petclinic.customers.web;
+package org.springframework.samples.petclinic.customers;
 
+import io.micrometer.core.aop.TimedAspect;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.samples.petclinic.customers.config.MetricConfig;
+import org.springframework.samples.petclinic.customers.model.*;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.samples.petclinic.customers.model.Owner;
-import org.springframework.samples.petclinic.customers.model.OwnerRepository;
-import org.springframework.samples.petclinic.customers.model.Pet;
-import org.springframework.samples.petclinic.customers.model.PetRepository;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RestController
-@RequestMapping("/owners/{ownerId}/pets")
-public class PetResource {
+@ExtendWith(SpringExtension.class)
+@SpringBootTest(classes = {MetricConfig.class, MetricConfigTest.TestConfig.class})
+class MetricConfigTest {
+    @Autowired
+    private MeterRegistry meterRegistry;
 
-    private final OwnerRepository ownerRepository;
-    private final PetRepository petRepository;
+    @Autowired
+    private TimedAspect timedAspect;
 
-    public PetResource(OwnerRepository ownerRepository, PetRepository petRepository) {
-        this.ownerRepository = ownerRepository;
-        this.petRepository = petRepository;
+    @Test
+    void testMetricsCommonTagsBeanExists() {
+        assertThat(meterRegistry).isNotNull();
+        assertThat(meterRegistry).isInstanceOf(SimpleMeterRegistry.class);
     }
 
-    /**
-     * Lấy danh sách tất cả thú cưng của một chủ sở hữu (Owner).
-     */
-    @GetMapping
-    public ResponseEntity<List<Pet>> getPetsByOwner(@PathVariable("ownerId") int ownerId) {
-        Optional<Owner> owner = ownerRepository.findById(ownerId);
-        if (owner.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(owner.get().getPets());
+    @Test
+    void testTimedAspectBeanExists() {
+        assertThat(timedAspect).isNotNull();
     }
 
-    /**
-     * Lấy thông tin một thú cưng cụ thể của chủ sở hữu.
-     */
-    @GetMapping("/{petId}")
-    public ResponseEntity<Pet> getPetById(@PathVariable("ownerId") int ownerId, @PathVariable("petId") int petId) {
-        Optional<Pet> pet = petRepository.findById(petId);
-        if (pet.isEmpty() || pet.get().getOwner().getId() != ownerId) {
-            return ResponseEntity.notFound().build();
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public MeterRegistry meterRegistry() {
+            return new SimpleMeterRegistry();
         }
-        return ResponseEntity.ok(pet.get());
+    }
+}
+
+class CustomersServiceApplicationTest {
+    @Test
+    void mainMethodShouldRunWithoutExceptions() {
+        try (MockedStatic<SpringApplication> mockedStatic = Mockito.mockStatic(SpringApplication.class)) {
+            assertDoesNotThrow(() -> CustomersServiceApplication.main(new String[]{}));
+            mockedStatic.verify(() -> SpringApplication.run(CustomersServiceApplication.class, new String[]{}), Mockito.times(1));
+        }
+    }
+}
+
+@DataJpaTest
+class OwnerRepositoryTest {
+    @Autowired
+    private OwnerRepository ownerRepository;
+
+    @Test
+    void testSaveAndFindOwner() {
+        Owner owner = new Owner();
+        owner.setFirstName("Alice");
+        owner.setLastName("Brown");
+        owner.setAddress("456 Elm St");
+        owner.setCity("San Francisco");
+        owner.setTelephone("9876543210");
+
+        Owner savedOwner = ownerRepository.save(owner);
+        Optional<Owner> foundOwner = ownerRepository.findById(savedOwner.getId());
+
+        assertTrue(foundOwner.isPresent());
+        assertEquals("Alice", foundOwner.get().getFirstName());
+    }
+
+    @Test
+    void testDeleteOwner() {
+        Owner owner = new Owner();
+        owner.setFirstName("Bob");
+        owner.setLastName("Smith");
+        owner.setAddress("789 Oak St");
+        owner.setCity("Los Angeles");
+        owner.setTelephone("5678901234");
+
+        Owner savedOwner = ownerRepository.save(owner);
+        ownerRepository.delete(savedOwner);
+
+        Optional<Owner> foundOwner = ownerRepository.findById(savedOwner.getId());
+        assertFalse(foundOwner.isPresent());
+    }
+}
+
+@DataJpaTest
+class PetRepositoryTest {
+    @Autowired
+    private PetRepository petRepository;
+
+    @Autowired
+    private TestEntityManager entityManager;
+
+    @Test
+    void testSaveAndFindPet() {
+        Pet pet = new Pet();
+        pet.setName("Charlie");
+
+        PetType type = new PetType();
+        type.setName("Dog");
+        entityManager.persist(type);
+
+        pet.setType(type);
+        Pet savedPet = petRepository.save(pet);
+        Optional<Pet> foundPet = petRepository.findById(savedPet.getId());
+
+        assertTrue(foundPet.isPresent());
+        assertEquals("Charlie", foundPet.get().getName());
+    }
+
+    @Test
+    void testFindPetTypes() {
+        PetType type1 = new PetType();
+        type1.setName("Rabbit");
+
+        PetType type2 = new PetType();
+        type2.setName("Bird");
+
+        entityManager.persist(type1);
+        entityManager.persist(type2);
+        entityManager.flush();
+
+        List<PetType> petTypes = petRepository.findPetTypes();
+        assertTrue(petTypes.size() >= 2);
+    }
+
+    @Test
+    void testDeletePet() {
+        Pet pet = new Pet();
+        pet.setName("Milo");
+
+        Pet savedPet = petRepository.save(pet);
+        petRepository.delete(savedPet);
+
+        Optional<Pet> foundPet = petRepository.findById(savedPet.getId());
+        assertFalse(foundPet.isPresent());
+    }
+}
+
+class OwnerTest {
+    @Test
+    void testOwnerSettersAndGetters() {
+        Owner owner = new Owner();
+        owner.setFirstName("John");
+        owner.setLastName("Doe");
+        owner.setAddress("123 Main St");
+        owner.setCity("New York");
+        owner.setTelephone("1234567890");
+
+        assertEquals("John", owner.getFirstName());
+        assertEquals("Doe", owner.getLastName());
+        assertEquals("123 Main St", owner.getAddress());
+        assertEquals("New York", owner.getCity());
+        assertEquals("1234567890", owner.getTelephone());
+    }
+}
+
+class PetTest {
+    @Test
+    void testPetSettersAndGetters() {
+        Pet pet = new Pet();
+        pet.setId(1);
+        pet.setName("Buddy");
+        pet.setBirthDate(new Date());
+
+        PetType type = new PetType();
+        type.setId(2);
+        type.setName("Dog");
+        pet.setType(type);
+
+        Owner owner = new Owner();
+        owner.setFirstName("John");
+        pet.setOwner(owner);
+
+        assertEquals(1, pet.getId());
+        assertEquals("Buddy", pet.getName());
+        assertNotNull(pet.getBirthDate());
+        assertEquals("Dog", pet.getType().getName());
+        assertEquals("John", pet.getOwner().getFirstName());
+    }
+}
+
+class PetTypeTest {
+    @Test
+    void testPetTypeSettersAndGetters() {
+        PetType type = new PetType();
+        type.setId(3);
+        type.setName("Cat");
+
+        assertEquals(3, type.getId());
+        assertEquals("Cat", type.getName());
     }
 }
