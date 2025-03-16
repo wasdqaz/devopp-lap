@@ -85,15 +85,15 @@ class OwnerResourceTest {
         Owner existingOwner = new Owner();
         ReflectionTestUtils.setField(existingOwner, "id", 1);
         existingOwner.setFirstName("OldName");
-
+    
         Owner updatedOwner = new Owner();
         ReflectionTestUtils.setField(updatedOwner, "id", 1);
         updatedOwner.setFirstName("NewName");
-
+    
         given(ownerRepository.findById(1)).willReturn(Optional.of(existingOwner));
-        given(ownerEntityMapper.toOwner(any(OwnerRequest.class))).willReturn(updatedOwner);
+        given(ownerEntityMapper.map(any(Owner.class), any(OwnerRequest.class))).willReturn(updatedOwner);
         given(ownerRepository.save(any(Owner.class))).willReturn(updatedOwner);
-
+    
         mvc.perform(put("/owners/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
