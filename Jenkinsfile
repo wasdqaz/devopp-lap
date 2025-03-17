@@ -12,7 +12,7 @@ pipeline {
             }
         }
         
-        stage('Detect Changes') {
+       stage('Detect Changes') {
             steps {
                 script {
                     // Fallback to initial commit if GIT_PREVIOUS_SUCCESSFUL_COMMIT is null
@@ -26,13 +26,13 @@ pipeline {
                     ).trim()
         
                     echo "Changed files:\n${changedFiles}"
-        
+                
                     if (changedFiles) {
                         def changedModules = changedFiles
                             .split("\n")
-                            .collect { it.split('/')[0] }  // Extract top-level directory (module name)
+                            .collect { it.split('/')[0] } // Lấy thư mục cấp 1
                             .unique()
-                            .findAll { it }  // Filter out empty values
+                            .findAll { it } // Lọc bỏ giá trị rỗng
                             .join(',')
         
                         env.MODULES_CHANGED = changedModules
@@ -40,12 +40,11 @@ pipeline {
                     } else {
                         echo "No changes detected - stopping pipeline."
                         currentBuild.result = 'ABORTED'
-                        return // Exit the stage without marking it as failed
+                        return
                     }
                 }
             }
         }
-
 
 
 
@@ -69,15 +68,16 @@ pipeline {
                         def modulesList = env.MODULES_CHANGED.split(',')
 
                         modulesList.each { module ->
-                            // Specify JaCoCo report pattern
-                                    jacoco(
-                                        execPattern: 'spring-petclinic-api-gateway/target/jacoco.exec',
-                                        classPattern: 'spring-petclinic-api-gateway/target/classes',
-                                        sourcePattern: 'spring-petclinic-api-gateway/src/main/java',
-                                        exclusionPattern: 'spring-petclinic-api-gateway/src/test*'
-                                    )
-
-
+                            dir(module) {
+                                echo "📊 Analyzing JaCoCo coverage for: ${module}"
+                                // Dùng jacoco plugin trong module tương ứng
+                                jacoco(
+                                    execPattern: 'target/jacoco.exec',
+                                    classPattern: 'target/classes',
+                                    sourcePattern: 'src/main/java',
+                                    exclusionPattern: 'src/test*'
+                                )
+                            }
                         }
                     }
                 }

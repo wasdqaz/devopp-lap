@@ -1,18 +1,3 @@
-/*
- * Copyright 2002-2021 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.springframework.samples.petclinic.vets.web;
 
 import org.junit.jupiter.api.Test;
@@ -33,9 +18,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * @author Maciej Szarlinski
- */
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(VetResource.class)
 @ActiveProfiles("test")
@@ -49,7 +31,6 @@ class VetResourceTest {
 
     @Test
     void shouldGetAListOfVets() throws Exception {
-
         Vet vet = new Vet();
         vet.setId(1);
 
@@ -58,5 +39,29 @@ class VetResourceTest {
         mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(1));
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenNoVets() throws Exception {
+        given(vetRepository.findAll()).willReturn(asList());  // Trả về danh sách rỗng
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isEmpty());  // Kiểm tra xem mảng trả về có rỗng không
+    }
+
+    @Test
+    void shouldReturnMultipleVets() throws Exception {
+        Vet vet1 = new Vet();
+        vet1.setId(1);
+        Vet vet2 = new Vet();
+        vet2.setId(2);
+
+        given(vetRepository.findAll()).willReturn(asList(vet1, vet2));
+
+        mvc.perform(get("/vets").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[1].id").value(2));  // Kiểm tra cả hai bác sĩ thú y
     }
 }
