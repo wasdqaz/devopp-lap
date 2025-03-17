@@ -18,38 +18,38 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MetricConfigTest {
 
     @Autowired
-    private MeterRegistry meterRegistry;
+    private MeterRegistry testMeterRegistry;
 
     @Autowired
-    private TimedAspect timedAspect;
+    private TimedAspect testTimedAspect;
 
     @Test
     void testMetricsCommonTagsBeanExists() {
-        assertThat(meterRegistry).isNotNull();
-        assertThat(meterRegistry).isInstanceOf(SimpleMeterRegistry.class);
+        assertThat(testMeterRegistry).isNotNull();
+        assertThat(testMeterRegistry).isInstanceOf(SimpleMeterRegistry.class);
     }
 
     @Test
     void testTimedAspectBeanExists() {
-        assertThat(timedAspect).isNotNull();
+        assertThat(testTimedAspect).isNotNull();
     }
 
     @Test
     void testMetricRegistryHasApplicationTag() {
-        meterRegistry.counter("test_metric", "application", "petclinic").increment();
-        assertThat(meterRegistry.get("test_metric").tag("application", "petclinic").counter()).isNotNull();
+        testMeterRegistry.counter("test_metric", "application", "petclinic").increment();
+        assertThat(testMeterRegistry.get("test_metric").tag("application", "petclinic").counter()).isNotNull();
     }
 
     @TestConfiguration
     static class TestConfig {
-        @Bean
-        public MeterRegistry meterRegistry() {
+        @Bean(name = "testMeterRegistry")
+        public MeterRegistry testMeterRegistry() {
             return new SimpleMeterRegistry();
         }
 
-        @Bean
-        public TimedAspect timedAspect(MeterRegistry meterRegistry) {
-            return new TimedAspect(meterRegistry);
+        @Bean(name = "testTimedAspect")
+        public TimedAspect testTimedAspect(MeterRegistry testMeterRegistry) {
+            return new TimedAspect(testMeterRegistry);
         }
     }
 }
