@@ -4,3 +4,6 @@
     <!-- Required for Loglevel managment into the Spring Petclinic Admin Server-->
     <jmxConfigurator/>
 </configuration>
+
+
+
