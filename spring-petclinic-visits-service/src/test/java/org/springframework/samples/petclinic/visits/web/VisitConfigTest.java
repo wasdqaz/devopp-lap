@@ -27,6 +27,10 @@ class MetricConfigTest {
     void testMetricsCommonTagsBeanExists() {
         assertThat(meterRegistry).isNotNull();
         assertThat(meterRegistry).isInstanceOf(SimpleMeterRegistry.class);
+        // Kiểm tra commonTags đã được thiết lập
+        assertThat(meterRegistry.getConfig().commonTags())
+            .extracting("key", "value")
+            .containsExactlyInAnyOrder(tuple("application", "petclinic"));
     }
 
     @Test
