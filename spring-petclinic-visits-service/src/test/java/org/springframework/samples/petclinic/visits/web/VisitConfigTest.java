@@ -27,15 +27,19 @@ class MetricConfigTest {
     void testMetricsCommonTagsBeanExists() {
         assertThat(meterRegistry).isNotNull();
         assertThat(meterRegistry).isInstanceOf(SimpleMeterRegistry.class);
-        // Kiểm tra commonTags đã được thiết lập
-        assertThat(meterRegistry.getConfig().commonTags())
-            .extracting("key", "value")
-            .containsExactlyInAnyOrder(tuple("application", "petclinic"));
     }
 
     @Test
     void testTimedAspectBeanExists() {
         assertThat(timedAspect).isNotNull();
+    }
+
+    @Test
+    void testMetricRegistryHasApplicationTag() {
+        // Kiểm tra xem metric có chứa tag "application=petclinic" không
+        meterRegistry.counter("test_metric").increment();  // Tạo 1 metric giả
+        assertThat(meterRegistry.find("test_metric").tags("application", "petclinic").counter())
+            .isNotNull();
     }
 
     @TestConfiguration
