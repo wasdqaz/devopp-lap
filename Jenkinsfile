@@ -49,6 +49,13 @@ pipeline {
 
 
         stage('Test') {
+            agent {
+                docker {
+                    image 'maven:3.8.7-openjdk-17' // Use Maven with Java 17
+                    args '-v /var/run/docker.sock:/var/run/docker.sock' // Optional for running Docker inside Docker
+                }
+            }
+
             steps {
                 script {
                     def modulesList = env.MODULES_CHANGED.split(',')
