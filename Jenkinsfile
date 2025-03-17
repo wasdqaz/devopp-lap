@@ -15,11 +15,18 @@ pipeline {
         stage('Detect Changes') {
             steps {
                 script {
-                    // Use git diff with pathspec filtering to exclude Jenkinsfile and pom.xml
-                    def changedFiles = sh(script: "git diff --name-only ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'", returnStdout: true).trim()
-                    
+                    // Fallback to initial commit if GIT_PREVIOUS_SUCCESSFUL_COMMIT is null
+                    def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
+        
+                    echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
+        
+                    def changedFiles = sh(
+                        script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'",
+                        returnStdout: true
+                    ).trim()
+        
                     echo "Changed files:\n${changedFiles}"
-                    
+        
                     if (changedFiles) {
                         def changedModules = changedFiles
                             .split("\n")
@@ -31,7 +38,6 @@ pipeline {
                         env.MODULES_CHANGED = changedModules
                         echo "Modules to process: ${env.MODULES_CHANGED}"
                     } else {
-                        // Stop pipeline gracefully if no changes are detected
                         echo "No changes detected - stopping pipeline."
                         currentBuild.result = 'ABORTED'
                         return // Exit the stage without marking it as failed
