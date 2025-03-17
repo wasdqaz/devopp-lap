@@ -151,7 +151,6 @@
                         </goals>
                     </execution>
                     <!-- Kiểm tra coverage tối thiểu -->
-                    <!--
                     <execution>
                         <id>check</id>
                         <goals>
@@ -172,7 +171,6 @@
                             </rules>
                         </configuration>
                     </execution>
-                    -->
                 </executions>
             </plugin>
         </plugins>
