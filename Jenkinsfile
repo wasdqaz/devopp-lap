@@ -15,12 +15,18 @@ pipeline {
        stage('Detect Changes') {
             steps {
                 script {
-                    // Kiểm tra nếu `GIT_PREVIOUS_SUCCESSFUL_COMMIT` bị null, thay bằng HEAD~1
+                    // Fallback to initial commit if GIT_PREVIOUS_SUCCESSFUL_COMMIT is null
                     def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
-                    def changedFiles = sh(script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'", returnStdout: true).trim()
+        
+                    echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
+        
+                    def changedFiles = sh(
+                        script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'",
+                        returnStdout: true
+                    ).trim()
         
                     echo "Changed files:\n${changedFiles}"
-        
+                
                     if (changedFiles) {
                         def changedModules = changedFiles
                             .split("\n")
