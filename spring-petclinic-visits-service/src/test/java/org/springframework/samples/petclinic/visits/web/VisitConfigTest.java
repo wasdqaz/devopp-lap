@@ -36,10 +36,7 @@ class MetricConfigTest {
 
     @Test
     void testMetricRegistryHasApplicationTag() {
-        // Tạo metric với tag "application=petclinic"
         meterRegistry.counter("test_metric", "application", "petclinic").increment();
-
-        // Kiểm tra metric tồn tại với đúng tag
         assertThat(meterRegistry.get("test_metric").tag("application", "petclinic").counter()).isNotNull();
     }
 
