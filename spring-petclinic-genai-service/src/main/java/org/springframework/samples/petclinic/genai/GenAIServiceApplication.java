@@ -28,5 +28,6 @@ public class GenAIServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(GenAIServiceApplication.class, args);
+		///
 	}
 }
