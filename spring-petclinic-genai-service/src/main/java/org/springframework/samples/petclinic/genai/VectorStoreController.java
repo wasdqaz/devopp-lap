@@ -89,6 +89,7 @@ public class VectorStoreController {
 		}
 
 		logger.info("vector store loaded with {} documents", documents.size());
+		///
 	}
 
 	public Resource convertListToJsonResource(List<Vet> vets) {
