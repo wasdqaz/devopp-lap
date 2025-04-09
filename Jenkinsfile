@@ -4,6 +4,7 @@ pipeline {
     environment {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
         DOCKER_HUB_USERNAME = "soulgalaxy"
+        DOCKER_HUB_CREDENTIALS_ID = "docker-hub-credentials"
     }
 
     stages {
@@ -100,21 +101,18 @@ pipeline {
             }
         }
 
-        stage('Build & Push Docker Image') {
+        stage('Build & Push Docker Image (Plugin)') {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     def modulesList = env.MODULES_CHANGED.split(',')
 
-                    modulesList.each { module ->
-                        def imageName = "${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}"
-                        echo "🛠️ Building Docker image: ${imageName}"
-
-                        dir(module) {
-                            sh """
-                                docker build -t ${imageName} .
-                                docker push ${imageName}
-                            """
+                    docker.withRegistry("https://index.docker.io/v1/", DOCKER_HUB_CREDENTIALS_ID) {
+                        modulesList.each { module ->
+                            dir(module) {
+                                def image = docker.build("${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}")
+                                image.push()
+                            }
                         }
                     }
                 }
