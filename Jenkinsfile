@@ -23,7 +23,7 @@ pipeline {
                     echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
         
                     def changedFiles = sh(
-                        script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml' ':(exclude)Dockerfile",
+                        script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml' ':(exclude)Dockerfile'",
                         returnStdout: true
                     ).trim()
         
