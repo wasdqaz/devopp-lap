@@ -101,23 +101,33 @@ pipeline {
             }
         }
 
-        stage('Build & Push Docker Image (Plugin)') {
+        stage('Build & Push Docker Image (Buildah)') {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     def modulesList = env.MODULES_CHANGED.split(',')
 
-                    docker.withRegistry("https://index.docker.io/v1/", DOCKER_HUB_CREDENTIALS_ID) {
+                    // Lấy thông tin đăng nhập Docker Hub từ credentials
+                    withCredentials([usernamePassword(credentialsId: DOCKER_HUB_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'buildah login -u $DOCKER_USER -p $DOCKER_PASS docker.io'
+
                         modulesList.each { module ->
                             dir(module) {
-                                def image = docker.build("${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}")
-                                image.push()
+                                def imageName = "${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}"
+                                
+                                // Build image từ Dockerfile trong thư mục module
+                                sh """
+                                    buildah bud -t ${imageName} .
+                                    buildah push ${imageName} docker://docker.io/${imageName}
+                                """
                             }
                         }
                     }
                 }
             }
         }
+
+
     }
 
     post {
