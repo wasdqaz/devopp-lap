@@ -1,5 +1,5 @@
 # /charts/spring-petclinic-service/chart/values.yaml
-replicas: 1
+replicas: 2
 
 image:
   repository: 22127210/spring-petclinic-api-gateway
