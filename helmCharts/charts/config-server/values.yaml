@@ -2,14 +2,13 @@
 replicas: 2
 
 image:
-  repository: 22127210/spring-petclinic-discovery-server
+  repository: 22127210/spring-petclinic-config-server
   tag: latest
   pullPolicy: IfNotPresent
 
-
 service:
   type: ClusterIP
-  port: 8080
+  port: 8888  # Change to 8888 - the default Config Server port
 
 resources:
   limits:
@@ -22,17 +21,19 @@ resources:
 env:
   - name: SPRING_PROFILES_ACTIVE
     value: docker
+  # Add Git repository configuration or other required env variables
+  # - name: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
+  #   value: "https://github.com/YOUR-ORG/YOUR-CONFIG-REPO"
 
-    
 livenessProbe:
   path: /actuator/health
-  port: 8080
+  port: 8888
   initialDelaySeconds: 15
   periodSeconds: 10
 
 readinessProbe:
   path: /actuator/health
-  port: 8080
+  port: 8888
   initialDelaySeconds: 5
   periodSeconds: 5
 

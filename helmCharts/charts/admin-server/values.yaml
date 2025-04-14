@@ -19,11 +19,9 @@ resources:
     cpu: "200m"
     memory: "256Mi"
 
-env: []
-# Example override:
-# env:
-#   - name: SPRING_PROFILES_ACTIVE
-#     value: dev
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: docker
 
     
 livenessProbe:
@@ -38,4 +36,11 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 5
 
-
+configServer:
+  enabled: true
+  image:
+    repository: 22127210/spring-petclinic-config-server
+    tag: latest
+  service:
+    name: config-server
+    port: 8888
