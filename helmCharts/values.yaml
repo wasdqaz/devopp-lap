@@ -22,10 +22,7 @@ resources:
 env:
   - name: SPRING_PROFILES_ACTIVE
     value: docker
-  - name: SPRING_CLOUD_CONFIG_ENABLED
-    value: "false"
-  - name: CONFIG_SERVER_URL
-    value: "none"
+
     
 livenessProbe:
   path: /actuator/health
@@ -38,3 +35,12 @@ readinessProbe:
   port: 8080
   initialDelaySeconds: 5
   periodSeconds: 5
+
+configServer:
+  enabled: true
+  image:
+    repository: springcommunity/spring-petclinic-config-server
+    tag: latest
+  service:
+    name: config-server
+    port: 8888
