@@ -9,7 +9,7 @@ image:
 
 service:
   type: ClusterIP
-  port: 8080
+  port: 8888
 
 resources:
   limits:
@@ -26,13 +26,13 @@ env:
     
 livenessProbe:
   path: /actuator/health
-  port: 8080
+  port: 8888
   initialDelaySeconds: 15
   periodSeconds: 10
 
 readinessProbe:
   path: /actuator/health
-  port: 8080
+  port: 8888
   initialDelaySeconds: 5
   periodSeconds: 5
 
