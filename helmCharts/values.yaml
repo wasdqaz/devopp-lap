@@ -2,7 +2,7 @@
 replicas: 2
 
 image:
-  repository: 22127210/spring-petclinic-config-server
+  repository: 22127210/spring-petclinic-api-gateway
   tag: latest
   pullPolicy: IfNotPresent
 
