@@ -22,6 +22,10 @@ resources:
 env:
   - name: SPRING_PROFILES_ACTIVE
     value: docker
+  - name: SPRING_CLOUD_CONFIG_ENABLED
+    value: "false"
+  - name: CONFIG_SERVER_URL
+    value: "none"
     
 livenessProbe:
   path: /actuator/health
