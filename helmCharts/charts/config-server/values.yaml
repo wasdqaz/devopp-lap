@@ -1,5 +1,5 @@
 # /charts/spring-petclinic-service/chart/values.yaml
-replicas: 2
+replicas: 1
 
 image:
   repository: 22127210/spring-petclinic-discovery-server
@@ -18,7 +18,7 @@ resources:
   requests:
     cpu: "200m"
     memory: "256Mi"
-    
+
 env: []
 # Example override:
 # env:
