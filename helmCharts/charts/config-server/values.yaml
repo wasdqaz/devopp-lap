@@ -36,3 +36,11 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 5
 
+configServer:
+  enabled: true
+  image:
+    repository: 22127210/spring-petclinic-config-server
+    tag: latest
+  service:
+    name: config-server
+    port: 8888
