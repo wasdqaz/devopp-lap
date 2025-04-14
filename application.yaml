@@ -5,14 +5,13 @@ metadata:
   namespace: argocd
 spec:
   project: default
-
   source: 
     repoURL: https://github.com/wasdqaz/devopp-lap.git
     targetRevision: HEAD
     path: helmCharts
   destination:
     server: https://kubernetes.default.svc
-    namespace: apps
+    namespace: petclinic-service
   syncPolicy:
     automated:
       prune: true
