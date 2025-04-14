@@ -19,12 +19,9 @@ resources:
     cpu: "200m"
     memory: "256Mi"
 
-env: []
-# Example override:
-# env:
-#   - name: SPRING_PROFILES_ACTIVE
-#     value: dev
-
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: docker
 
     
 livenessProbe:
