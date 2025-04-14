@@ -1,0 +1,6 @@
+apiVersion: v2
+name: customers-service
+description: Helm chart for customers-service microservice
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

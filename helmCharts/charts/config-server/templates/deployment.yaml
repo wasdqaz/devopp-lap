@@ -2,21 +2,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "petclinic.fullname" . }}
+  name: {{ include "config-server.fullname" . }}
   labels:
-    app: {{ include "petclinic.name" . }}
+    app: {{ include "config-server.name" . }}
 spec:
   replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
-      app: {{ include "petclinic.name" . }}
+      app: {{ include "config-server.name" . }}
   template:
     metadata:
       labels:
-        app: {{ include "petclinic.name" . }}
+        app: {{ include "config-server.name" . }}
     spec:
       containers:
-        - name: {{ include "petclinic.name" . }}
+        - name: {{ include "config-server.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:

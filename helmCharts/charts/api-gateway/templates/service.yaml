@@ -2,13 +2,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.service.name | default (include "petclinic.fullname" .) }}
+  name: {{ .Values.service.name | default (include "api-gateway.fullname" .) }}
   labels:
-    app: {{ include "petclinic.name" . }}
+    app: {{ include "api-gateway.name" . }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: {{ include "petclinic.name" . }}
+    app: {{ include "api-gateway.name" . }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.port }}

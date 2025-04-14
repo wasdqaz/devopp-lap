@@ -5,10 +5,10 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source: 
+  source:
     repoURL: https://github.com/wasdqaz/devopp-lap.git
     targetRevision: HEAD
-    path: helmCharts
+    path: helmCharts/charts
   destination:
     server: https://kubernetes.default.svc
     namespace: petclinic-service
