@@ -3,8 +3,7 @@ pipeline {
 
     environment {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
-        DOCKER_HUB_USERNAME = "soulgalaxy"
-        DOCKER_HUB_CREDENTIALS_ID = "docker-hub-credentials"
+
     }
 
     stages {
@@ -107,9 +106,13 @@ pipeline {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     def modulesList = env.MODULES_CHANGED.split(',')
 
-                    withCredentials([usernamePassword(credentialsId: DOCKER_HUB_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-
+                    withCredentials([usernamePassword(
+                        credentialsId: 'docker-hub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_PASSWORD'
+                        )]) {
+                            sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
+                        }
                         modulesList.each { module ->
                             dir(module) {
                                 def imageTag = "${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}"
