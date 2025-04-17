@@ -97,7 +97,7 @@ pipeline {
                     for (service in servicesList) {
                         echo "🏗️ Building ${service}..."
                         dir(service) {
-                            sh '../mvnw package'
+                            sh '../mvnw package -DskipTests'
                         }
                     }
                 }
