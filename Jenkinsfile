@@ -1,9 +1,11 @@
+Ngô Trí
 pipeline {
     agent any
 
     environment {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
-
+        DOCKER_HUB_USERNAME = "soulgalaxy"
+        DOCKER_HUB_CREDENTIALS_ID = "docker-hub-credentials"
     }
 
     stages {
@@ -93,7 +95,7 @@ pipeline {
                     modulesList.each { module ->
                         dir(module) {
                             echo "Building module: ${module}"
-                            sh "../mvnw package"
+                            sh "${WORKSPACE}/mvnw package"
                         }
                     }
                 }
@@ -110,9 +112,10 @@ pipeline {
                         credentialsId: 'docker-hub-credentials',
                         usernameVariable: 'DOCKERHUB_USER',
                         passwordVariable: 'DOCKERHUB_PASSWORD'
-                        )]) {
-                            sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
-                        }
+                    )]) {
+                        sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
+                    }
+
                         modulesList.each { module ->
                             dir(module) {
                                 def imageTag = "${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}"
@@ -124,6 +127,28 @@ pipeline {
                 }
             }
         }
+
+        // stage('Deploy to Kubernetes') {
+        //     steps {
+        //         script {
+        //             def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+        //             def modulesList = env.MODULES_CHANGED.split(',')
+
+        //             modulesList.each { module ->
+        //                 echo "🔁 Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
+
+        //                 // Update image tag in deployment YAML
+        //                 sh """
+        //                 sed -i 's|image: ${DOCKER_HUB_USERNAME}/${module}:.*|image: ${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}|' k8s/${module}/deployment.yaml
+        //                 """
+
+        //                 // Apply to Kubernetes
+        //                 sh "kubectl apply -f k8s/${module}/deployment.yaml"
+        //             }
+        //         }
+        //     }
+        // }
+
     }
 
     post {
