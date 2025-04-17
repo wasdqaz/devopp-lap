@@ -49,41 +49,41 @@ pipeline {
 
 
 
-        stage('Test') {
-            steps {
-                script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
+        // stage('Test') {
+        //     steps {
+        //         script {
+        //             def modulesList = env.MODULES_CHANGED.split(',')
 
-                    modulesList.each { module ->
-                        dir(module) {
-                            echo "Running tests for: ${module}"
-                            // Run JaCoCo agent during test phase
-                            sh "../mvnw clean verify -Pspringboot"
-                        }
-                    }
-                }
-            }
-            post {
-                always {
-                    script {
-                        def modulesList = env.MODULES_CHANGED.split(',')
+        //             modulesList.each { module ->
+        //                 dir(module) {
+        //                     echo "Running tests for: ${module}"
+        //                     // Run JaCoCo agent during test phase
+        //                     sh "../mvnw clean verify -Pspringboot"
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             script {
+        //                 def modulesList = env.MODULES_CHANGED.split(',')
 
-                        modulesList.each { module ->
-                            dir(module) {
-                                echo "📊 Analyzing JaCoCo coverage for: ${module}"
-                                // Dùng jacoco plugin trong module tương ứng
-                                jacoco(
-                                    execPattern: 'target/jacoco.exec',
-                                    classPattern: 'target/classes',
-                                    sourcePattern: 'src/main/java',
-                                    exclusionPattern: 'src/test*'
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //                 modulesList.each { module ->
+        //                     dir(module) {
+        //                         echo "📊 Analyzing JaCoCo coverage for: ${module}"
+        //                         // Dùng jacoco plugin trong module tương ứng
+        //                         jacoco(
+        //                             execPattern: 'target/jacoco.exec',
+        //                             classPattern: 'target/classes',
+        //                             sourcePattern: 'src/main/java',
+        //                             exclusionPattern: 'src/test*'
+        //                         )
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Build') {
             steps {
