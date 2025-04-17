@@ -1,11 +1,8 @@
-Ngô Trí
 pipeline {
     agent any
 
     environment {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
-        DOCKER_HUB_USERNAME = "soulgalaxy"
-        DOCKER_HUB_CREDENTIALS_ID = "docker-hub-credentials"
     }
 
     stages {
