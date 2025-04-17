@@ -120,7 +120,7 @@ pipeline {
 
                     modulesList.each { module ->
                         dir(module) {
-                            def imageTag = "${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}"
+                            def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
                             sh "docker build -t ${imageTag} ."
                             sh "docker push ${imageTag}"
                         }
