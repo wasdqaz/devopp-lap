@@ -93,7 +93,7 @@ pipeline {
                     modulesList.each { module ->
                         dir(module) {
                             echo "Building module: ${module}"
-                            sh "../mvnw clean install -P buildDocker"
+                            sh "../mvnw package"
                         }
                     }
                 }
