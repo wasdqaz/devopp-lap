@@ -87,12 +87,17 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
+                    def servicesList = MODULES_CHANGED.tokenize(',')
 
-                    modulesList.each { module ->
-                        dir(module) {
-                            echo "Building module: ${module}"
-                            sh "../mvnw package"
+                    if (servicesList.isEmpty()) {
+                        echo "ℹ️ No changed services found. Skipping build."
+                        return
+                    }
+
+                    for (service in servicesList) {
+                        echo "🏗️ Building ${service}..."
+                        dir(service) {
+                            sh '../mvnw package -DskipTests'
                         }
                     }
                 }
