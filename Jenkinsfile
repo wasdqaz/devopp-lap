@@ -113,17 +113,17 @@ pipeline {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
                     }
 
-                        modulesList.each { module ->
-                            dir(module) {
-                                def imageTag = "${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}"
-                                sh "docker build -t ${imageTag} ."
-                                sh "docker push ${imageTag}"
-                            }
+                    modulesList.each { module ->
+                        dir(module) {
+                            def imageTag = "${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}"
+                            sh "docker build -t ${imageTag} ."
+                            sh "docker push ${imageTag}"
                         }
                     }
                 }
             }
         }
+
 
         // stage('Deploy to Kubernetes') {
         //     steps {
