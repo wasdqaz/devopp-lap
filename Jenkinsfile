@@ -116,15 +116,17 @@ pipeline {
                         passwordVariable: 'DOCKERHUB_PASSWORD'
                     )]) {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
+
+                        
+                        modulesList.each { module ->
+                            dir(module) {
+                                def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
+                                sh "docker build -t ${imageTag} ."
+                                sh "docker push ${imageTag}"
+                            }
+                        }// module
                     }
 
-                    modulesList.each { module ->
-                        dir(module) {
-                            def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
-                            sh "docker build -t ${imageTag} ."
-                            sh "docker push ${imageTag}"
-                        }
-                    }
                 }
             }
         }
