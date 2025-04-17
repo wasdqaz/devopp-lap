@@ -94,7 +94,6 @@ pipeline {
                         dir(module) {
                             echo "Building module: ${module}"
                             sh "../mvnw clean install -P buildDocker"
-"
                         }
                     }
                 }
