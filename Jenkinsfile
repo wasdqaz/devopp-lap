@@ -5,13 +5,24 @@ pipeline {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
     }
 
+    parameters {
+        string(name: 'admin-server', defaultValue: 'main', description: 'Branch for admin-server')
+        string(name: 'api-gateway', defaultValue: 'main', description: 'Branch for api-gateway')
+        string(name: 'config-server', defaultValue: 'main', description: 'Branch for config-server')
+        string(name: 'customers-service', defaultValue: 'main', description: 'Branch for customers-service')
+        string(name: 'discovery-server', defaultValue: 'main', description: 'Branch for discovery-server')
+        string(name: 'genai-service', defaultValue: 'main', description: 'Branch for genai-service')
+        string(name: 'vets-service', defaultValue: 'main', description: 'Branch for vets-service')
+        string(name: 'visits-service', defaultValue: 'main', description: 'Branch for visits-service')
+    }
+
     stages {
         stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
-        
+
         stage('Detect Changes') {
             steps {
                 script {
@@ -46,55 +57,34 @@ pipeline {
             }
         }
 
-        // stage('Test') {
-        //     steps {
-        //         script {
-        //             def modulesList = env.MODULES_CHANGED.split(',')
-
-        //             modulesList.each { module ->
-        //                 dir(module) {
-        //                     echo "Running tests for: ${module}"
-        //                     // Run JaCoCo agent during test phase
-        //                     sh "../mvnw clean verify -Pspringboot"
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     post {
-        //         always {
-        //             script {
-        //                 def modulesList = env.MODULES_CHANGED.split(',')
-
-        //                 modulesList.each { module ->
-        //                     dir(module) {
-        //                         echo "📊 Analyzing JaCoCo coverage for: ${module}"
-        //                         // Dùng jacoco plugin trong module tương ứng
-        //                         jacoco(
-        //                             execPattern: 'target/jacoco.exec',
-        //                             classPattern: 'target/classes',
-        //                             sourcePattern: 'src/main/java',
-        //                             exclusionPattern: 'src/test*'
-        //                         )
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
+        // Build stage updated to process modules based on parameters
         stage('Build') {
             steps {
                 script {
                     def servicesList = MODULES_CHANGED.tokenize(',')
+                    def selectedServices = []
 
-                    if (servicesList.isEmpty()) {
-                        echo "No changed services found. Skipping build."
+                    // Check which services were selected via parameters
+                    if (params.admin-server != 'main') selectedServices.add('spring-petclinic-admin-server')
+                    if (params.api-gateway != 'main') selectedServices.add('spring-petclinic-api-gateway')
+                    if (params.config-server != 'main') selectedServices.add('spring-petclinic-config-server')
+                    if (params.customers-service != 'main') selectedServices.add('spring-petclinic-customers-service')
+                    if (params.discovery-server != 'main') selectedServices.add('spring-petclinic-discovery-server')
+                    if (params.genai-service != 'main') selectedServices.add('spring-petclinic-genai-service')
+                    if (params.vets-service != 'main') selectedServices.add('spring-petclinic-vets-service')
+                    if (params.visits-service != 'main') selectedServices.add('spring-petclinic-visits-service')
+
+                    if (selectedServices.isEmpty()) {
+                        echo "No selected services found. Skipping build."
                         return
                     }
 
-                    for (service in servicesList) {
+                    // Build only the selected services
+                    for (service in selectedServices) {
                         echo "Building ${service}..."
                         dir(service) {
+                            // Checkout the selected branch for the service
+                            sh "git checkout ${params[service]}"
                             sh '../mvnw package -DskipTests'
                         }
                     }
@@ -106,7 +96,17 @@ pipeline {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    def modulesList = env.MODULES_CHANGED.split(',')
+                    def selectedServices = []
+
+                    // Check which services were selected via parameters
+                    if (params.admin-server != 'main') selectedServices.add('spring-petclinic-admin-server')
+                    if (params.api-gateway != 'main') selectedServices.add('spring-petclinic-api-gateway')
+                    if (params.config-server != 'main') selectedServices.add('spring-petclinic-config-server')
+                    if (params.customers-service != 'main') selectedServices.add('spring-petclinic-customers-service')
+                    if (params.discovery-server != 'main') selectedServices.add('spring-petclinic-discovery-server')
+                    if (params.genai-service != 'main') selectedServices.add('spring-petclinic-genai-service')
+                    if (params.vets-service != 'main') selectedServices.add('spring-petclinic-vets-service')
+                    if (params.visits-service != 'main') selectedServices.add('spring-petclinic-visits-service')
 
                     withCredentials([usernamePassword(
                         credentialsId: 'docker-hub-credentials',
@@ -115,14 +115,14 @@ pipeline {
                     )]) {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
 
-                        modulesList.each { module ->
+                        selectedServices.each { module ->
                             dir(module) {
                                 // Sửa đổi tag image thành ${module}:${COMMIT_ID}
                                 def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
                                 sh "docker build -t ${imageTag} ."
                                 sh "docker push ${imageTag}"
                             }
-                        } // module
+                        }
                     }
                 }
             }
@@ -134,7 +134,7 @@ pipeline {
         //             def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
         //             def modulesList = env.MODULES_CHANGED.split(',')
 
-        //             modulesList.each { module ->
+        //             modulesList.each { module -> 
         //                 echo "Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
 
         //                 // Update image tag in deployment YAML
