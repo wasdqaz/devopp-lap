@@ -132,27 +132,23 @@ pipeline {
                             } else {
                                 imageTag = "${imageName}:main"
                                 echo "Kiểm tra image cục bộ: ${imageTag}"
-                                def commandResult = sh(script: "docker image inspect ${imageTag} > /dev/null 2>&1; echo \$?", returnStdout: true, failOnError: false)
-                                def imageExists = commandResult.trim().toInteger() == 0
-                                echo "Giá trị của imageExists: ${imageExists}"
-                            
+                                def checkImageCommand = "docker images -q ${imageTag}"
+                                def imageId = sh(script: checkImageCommand, returnStdout: true).trim()
+                                def imageExists = !imageId.isEmpty()
+                                echo "Image ID: ${imageId}"
+                                echo "Image exists: ${imageExists}"
+                                
                                 if (!imageExists) {
                                     echo "Image '${imageTag}' không tồn tại cục bộ. Tiến hành build."
                                     dir(module) {
-                                        echo "Bắt đầu build: ../mvnw package -DskipTests"
                                         sh '../mvnw package -DskipTests'
-                                        echo "Hoàn thành build Maven."
-                                        echo "Bắt đầu build Docker image: docker build -t ${imageTag} ."
                                         sh "docker build -t ${imageTag} ."
-                                        echo "Hoàn thành build Docker image."
                                     }
-                                    echo "Tiến hành push image: ${imageTag}"
-                                    sh "docker push ${imageTag}"
                                 } else {
-                                    echo "Image '${imageTag}' đã tồn tại cục bộ. Chỉ tiến hành push."
-                                    echo "Tiến hành push image: ${imageTag}"
-                                    sh "docker push ${imageTag}"
+                                    echo "Image '${imageTag}' đã tồn tại cục bộ."
                                 }
+                                echo "Pushing image: ${imageTag}"
+                                sh "docker push ${imageTag}"
                             }
                         }
                     }
