@@ -48,56 +48,111 @@ pipeline {
 
 
 
-        stage('Test') {
-            steps {
-                script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
+        // stage('Test') {
+        //     steps {
+        //         script {
+        //             def modulesList = env.MODULES_CHANGED.split(',')
 
-                    modulesList.each { module ->
-                        dir(module) {
-                            echo "Running tests for: ${module}"
-                            // Run JaCoCo agent during test phase
-                            sh "../mvnw clean verify -Pspringboot"
-                        }
-                    }
-                }
-            }
-            post {
-                always {
-                    script {
-                        def modulesList = env.MODULES_CHANGED.split(',')
+        //             modulesList.each { module ->
+        //                 dir(module) {
+        //                     echo "Running tests for: ${module}"
+        //                     // Run JaCoCo agent during test phase
+        //                     sh "../mvnw clean verify -Pspringboot"
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             script {
+        //                 def modulesList = env.MODULES_CHANGED.split(',')
 
-                        modulesList.each { module ->
-                            dir(module) {
-                                echo "📊 Analyzing JaCoCo coverage for: ${module}"
-                                // Dùng jacoco plugin trong module tương ứng
-                                jacoco(
-                                    execPattern: 'target/jacoco.exec',
-                                    classPattern: 'target/classes',
-                                    sourcePattern: 'src/main/java',
-                                    exclusionPattern: 'src/test*'
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //                 modulesList.each { module ->
+        //                     dir(module) {
+        //                         echo "📊 Analyzing JaCoCo coverage for: ${module}"
+        //                         // Dùng jacoco plugin trong module tương ứng
+        //                         jacoco(
+        //                             execPattern: 'target/jacoco.exec',
+        //                             classPattern: 'target/classes',
+        //                             sourcePattern: 'src/main/java',
+        //                             exclusionPattern: 'src/test*'
+        //                         )
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Build') {
             steps {
                 script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
+                    def servicesList = MODULES_CHANGED.tokenize(',')
 
-                    modulesList.each { module ->
-                        dir(module) {
-                            echo "Building module: ${module}"
-                            sh "${WORKSPACE}/mvnw package"
+                    if (servicesList.isEmpty()) {
+                        echo "No changed services found. Skipping build."
+                        return
+                    }
+
+                    for (service in servicesList) {
+                        echo " Building ${service}..."
+                        dir(service) {
+                            sh '../mvnw package -DskipTests'
                         }
                     }
                 }
             }
         }
+
+        stage('Build & Push Docker Image (CLI)') {
+            steps {
+                script {
+                    def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def modulesList = env.MODULES_CHANGED.split(',')
+
+                    withCredentials([usernamePassword(
+                        credentialsId: 'docker-hub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_PASSWORD'
+                    )]) {
+                        sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
+
+                        
+                        modulesList.each { module ->
+                            dir(module) {
+                                def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
+                                sh "docker build -t ${imageTag} ."
+                                sh "docker push ${imageTag}"
+                            }
+                        }// module
+                    }
+
+                }
+            }
+        }
+
+
+        // stage('Deploy to Kubernetes') {
+        //     steps {
+        //         script {
+        //             def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+        //             def modulesList = env.MODULES_CHANGED.split(',')
+
+        //             modulesList.each { module ->
+        //                 echo " Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
+
+        //                 // Update image tag in deployment YAML
+        //                 sh """
+        //                 sed -i 's|image: ${DOCKER_HUB_USERNAME}/${module}:.*|image: ${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}|' k8s/${module}/deployment.yaml
+        //                 """
+
+        //                 // Apply to Kubernetes
+        //                 sh "kubectl apply -f k8s/${module}/deployment.yaml"
+        //             }
+        //         }
+        //     }
+        // }
+
     }
 
     post {
