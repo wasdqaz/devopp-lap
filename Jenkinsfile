@@ -1,9 +1,9 @@
 pipeline {
     agent any
 
+    def MODULES_CHANGED = ""
     environment {
         // DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
-        MODULES_CHANGED = ""
     }
 
     options {
@@ -39,7 +39,7 @@ pipeline {
                             .findAll { it } // Lọc bỏ giá trị rỗng
                             .join(',')
         
-                        env.MODULES_CHANGED = changedModules
+                        MODULES_CHANGED = changedModules
                         echo "Modules to process: ${env.MODULES_CHANGED}"
                     } 
                     else {
@@ -91,7 +91,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    def servicesList = env.MODULES_CHANGED.tokenize(',')
+                    def servicesList = MODULES_CHANGED.tokenize(',')
 
                     if (servicesList.isEmpty()) {
                         echo "No changed services found. Skipping build."
