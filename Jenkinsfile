@@ -5,6 +5,7 @@ pipeline {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
     }
 
+    
     stages {
         stage('Checkout SCM') {
             steps {
@@ -90,12 +91,12 @@ pipeline {
                     def servicesList = MODULES_CHANGED.tokenize(',')
 
                     if (servicesList.isEmpty()) {
-                        echo "ℹ️ No changed services found. Skipping build."
+                        echo "No changed services found. Skipping build."
                         return
                     }
 
                     for (service in servicesList) {
-                        echo "🏗️ Building ${service}..."
+                        echo " Building ${service}..."
                         dir(service) {
                             sh '../mvnw package -DskipTests'
                         }
@@ -139,7 +140,7 @@ pipeline {
         //             def modulesList = env.MODULES_CHANGED.split(',')
 
         //             modulesList.each { module ->
-        //                 echo "🔁 Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
+        //                 echo " Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
 
         //                 // Update image tag in deployment YAML
         //                 sh """
