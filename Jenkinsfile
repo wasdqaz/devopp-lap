@@ -91,7 +91,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    def servicesList = MODULES_CHANGED.tokenize(',')
+                    def servicesList = env.MODULES_CHANGED.tokenize(',')
 
                     if (servicesList.isEmpty()) {
                         echo "No changed services found. Skipping build."
