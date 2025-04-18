@@ -59,8 +59,10 @@ pipeline {
                                 def imageExists = !imageId.isEmpty()
                                 echo "Image ID: ${imageId}"
                                 echo "Image exists: ${imageExists}"
-                                sh '../mvnw package -DskipTests'
-                                sh "docker build -t ${imageTag} ."
+                                dir(module) {
+                                    sh '../mvnw package -DskipTests'
+                                    sh "docker build -t ${imageTag} ."
+                                }
                                 echo "Pushing image: ${imageTag}"
                                 sh "docker push ${imageTag}"
                             }
