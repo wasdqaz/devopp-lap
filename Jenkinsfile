@@ -39,11 +39,11 @@ pipeline {
                         env.MODULES_CHANGED = changedModules
                         echo "Modules to process: ${env.MODULES_CHANGED}"
                     } 
-                    // else {
-                    //     echo "No changes detected - stopping pipeline."
-                    //     currentBuild.result = 'ABORTED'
-                    //     return
-                    // }
+                    else {
+                        echo "No changes detected - stopping pipeline."
+                        currentBuild.result = 'ABORTED'
+                        return
+                    }
                 }
             }
         }
