@@ -9,7 +9,7 @@ pipeline {
         string(name: 'discovery-server', defaultValue: 'main', description: 'Branch for discovery-server')
         string(name: 'genai-service', defaultValue: 'main', description: 'Branch for genai-service')
         string(name: 'vets-service', defaultValue: 'main', description: 'Branch for vets-service')
-        // Bỏ visits-service ra khỏi parameter
+        string(name: 'visits-service', defaultValue: 'main', description: 'Branch for visits-service') // thêm visits-service vào parameter
     }
 
     environment {
@@ -20,7 +20,7 @@ pipeline {
         DISCOVERY_SERVER_BRANCH = "${params.'discovery-server'}"
         GENAI_SERVICE_BRANCH = "${params.'genai-service'}"
         VETS_SERVICE_BRANCH = "${params.'vets-service'}"
-        VISITS_SERVICE_BRANCH = "main" // luôn là main
+        VISITS_SERVICE_BRANCH = "${params.'visits-service'}" // lấy giá trị từ parameter
     }
 
     stages {
@@ -41,14 +41,19 @@ pipeline {
                         "spring-petclinic-discovery-server": env.DISCOVERY_SERVER_BRANCH,
                         "spring-petclinic-genai-service": env.GENAI_SERVICE_BRANCH,
                         "spring-petclinic-vets-service": env.VETS_SERVICE_BRANCH,
-                        "spring-petclinic-visits-service": env.VISITS_SERVICE_BRANCH // luôn có giá trị
+                        "spring-petclinic-visits-service": env.VISITS_SERVICE_BRANCH // lấy giá trị từ parameter
                     ]
 
-                    servicesMap.each { service, branch ->
-                        echo "Building ${service} from branch ${branch}..."
-                        dir(service) {
-                            sh "git checkout ${branch}"
-                            sh "../mvnw package -DskipTests"
+                    servicesMap.each { service, branch -> 
+                        // Kiểm tra nếu nhánh không phải "main" thì mới build
+                        if (branch != "main") {
+                            echo "Building ${service} from branch ${branch}..."
+                            dir(service) {
+                                sh "git checkout ${branch}"
+                                sh "../mvnw package -DskipTests"
+                            }
+                        } else {
+                            echo "Skipping ${service} as it is on the main branch."
                         }
                     }
                 }
@@ -77,7 +82,7 @@ pipeline {
                     )]) {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
 
-                        modulesList.each { module ->
+                        modulesList.each { module -> 
                             def branch = env."${module.replace('-', '_').toUpperCase()}_BRANCH"
                             if (branch) {
                                 dir(module) {
