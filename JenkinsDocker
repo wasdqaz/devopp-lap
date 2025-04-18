@@ -1,0 +1,55 @@
+def dockerBuildAndPush(modules) {
+  stage('Build and Push Docker Image') {
+    steps {
+        script {
+            def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+
+            withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                sh "docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASSWORD}"
+
+                env.DEFAULT_MODULES.tokenize(',').each { module ->
+                    def targetBranch = params."${module}"?.trim()
+                    echo "Parameter '${module}': ${targetBranch}"
+                    def imageName = "${DOCKERHUB_USER}/${module}"
+                    def imageTag
+
+                    if (targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()) {
+                        echo "Condition 'targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()' is true. targetBranch: '${targetBranch}'"
+                        // Checkout branch cụ thể và build service đó
+                        checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
+                        dir(module) {
+                            echo "Building service: ${module} from branch: ${targetBranch}"
+                            sh '../mvnw package -DskipTests'
+                            // Tag image với commit ID của HEAD sau khi build
+                            def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                            imageTag = "${imageName}:${builtCommitId}"
+                            sh "docker build -t ${imageTag} ."
+                            sh "docker push ${imageTag}"
+                        }
+                    } else {
+                        imageTag = "${imageName}:main"
+                        echo "Kiểm tra image cục bộ: ${imageTag}"
+                        def checkImageCommand = "docker images -q ${imageTag}"
+                        def imageId = sh(script: checkImageCommand, returnStdout: true).trim()
+                        def imageExists = !imageId.isEmpty()
+                        echo "Image ID: ${imageId}"
+                        echo "Image exists: ${imageExists}"
+                        
+                        if (!imageExists) {
+                            echo "Image '${imageTag}' không tồn tại cục bộ. Tiến hành build."
+                            dir(module) {
+                                sh '../mvnw package -DskipTests'
+                                sh "docker build -t ${imageTag} ."
+                            }
+                        } else {
+                            echo "Image '${imageTag}' đã tồn tại cục bộ."
+                        }
+                        echo "Pushing image: ${imageTag}"
+                        sh "docker push ${imageTag}"
+                    }
+                }
+            }
+        }
+    }
+}
+return this
