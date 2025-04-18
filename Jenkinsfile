@@ -5,6 +5,17 @@ pipeline {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
     }
 
+    parameters {
+        script {
+            def modules = environment.DEFAULT_MODULES.tokenize(',')
+            def paramsList = []
+            modules.each { module ->
+                paramsList.add(string(name: module.trim(), defaultValue: 'main', description: "Branch to build for ${module.trim()}"))
+            }
+            return paramsList
+        }
+    }
+
     stages {
         stage('Checkout SCM') {
             steps {
