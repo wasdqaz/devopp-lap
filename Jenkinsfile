@@ -131,7 +131,71 @@ pipeline {
                 }
             }
         }
-
+        stage('Update GitOps Repository') {
+            when {
+                expression { SERVICES_CHANGED?.trim() != "" }
+            }
+            steps {
+                script {
+                    def servicesList = SERVICES_CHANGED.tokenize(',')
+                    def commitHash = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    
+                    // Create a temporary directory for the GitOps repo
+                    sh "rm -rf spring-petclinic-microservices-config || true"
+                    
+                    // Use credentials for Git operations
+                    withCredentials([usernamePassword(
+                        credentialsId: 'github-credentials', 
+                        usernameVariable: 'GIT_USERNAME', 
+                        passwordVariable: 'GIT_PASSWORD'
+                    )]) {
+                        // Clone with credentials
+                        sh """
+                        git clone https://\${GIT_USERNAME}:\${GIT_PASSWORD}@github.com/wasdqaz/spring-petclinic-microservices-config.git
+                        """
+                        
+                        dir('spring-petclinic-microservices-config') {
+                            
+                            // Update image tags for each changed service
+                            for (service in servicesList) {
+                                def shortServiceName = service.replaceFirst("spring-petclinic-", "")
+                                def valuesFile = "values/dev/values-${shortServiceName}.yaml"
+                                
+                                // Check if file exists and update with sed
+                                sh """
+                                if [ -f "${valuesFile}" ]; then
+                                    echo "Updating image tag in ${valuesFile}"
+                                    sed -i 's/\\(tag:\\s*\\).*/\\1"'${commitHash}'"/' ${valuesFile}
+                                else
+                                    echo "Warning: ${valuesFile} not found"
+                                fi
+                                """
+                            }
+                            
+                            // Configure Git and commit changes
+                            sh """
+                            git config user.email "jenkins@example.com"
+                            git config user.name "Jenkins CI"
+                            git status
+                            
+                            # Only commit if there are changes
+                            if ! git diff --quiet; then
+                                git add .
+                                git commit -m "Update image tags for ${SERVICES_CHANGED} to ${commitHash}"
+                                git push
+                                echo "✅ Successfully updated GitOps repository"
+                            else
+                                echo "ℹ️ No changes to commit in GitOps repository"
+                            fi
+                            """
+                        }
+                    }
+                    
+                    // Clean up after ourselves
+                    sh "rm -rf spring-petclinic-microservices-config || true"
+                }
+            }
+        }
 
         // stage('Deploy to Kubernetes') {
         //     steps {
