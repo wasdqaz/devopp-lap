@@ -108,7 +108,7 @@ pipeline {
             }
         }
 
-        stage('Build & Push Docker Image (CLI)') {
+        stage('Build & Push Docker Image') {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
@@ -134,7 +134,7 @@ pipeline {
                 }
             }
         }
-        stage('Update GitOps Repository') {
+        stage('Update Config Repository') {
             when {
                 expression { MODULES_CHANGED?.trim() != "" }
             }
@@ -153,7 +153,10 @@ pipeline {
                         passwordVariable: 'GIT_PASSWORD'
                     )]) {
                         // Clone with credentials
+                        
                         sh """
+                        echo "Cloning GitOps repository..."
+                        echo "https://\${GIT_USERNAME}:\${GIT_PASSWORD}@github.com/wasdqaz/spring-petclinic-microservices-config.git"
                         git clone https://\${GIT_USERNAME}:\${GIT_PASSWORD}@github.com/wasdqaz/spring-petclinic-microservices-config.git
                         """
                         
