@@ -49,7 +49,6 @@ pipeline {
                                 sh '../mvnw package -DskipTests'
                                 // Tag image với commit ID của HEAD sau khi build
                                 def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                                imageTag = "${imageName}:${builtCommitId}"
                                 sh "docker build -t ${imageTag} ."
                                 sh "docker push ${imageTag}"
                             }
