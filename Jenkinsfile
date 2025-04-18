@@ -146,10 +146,11 @@ pipeline {
                                     }
                                     echo "Tiến hành push image: ${imageTag}"
                                     sh "docker push ${imageTag}"
-                            } else {
-                                echo "Image '${imageTag}' đã tồn tại cục bộ. Chỉ tiến hành push."
-                                echo "Tiến hành push image: ${imageTag}"
-                                sh "docker push ${imageTag}"
+                                } else {
+                                    echo "Image '${imageTag}' đã tồn tại cục bộ. Chỉ tiến hành push."
+                                    echo "Tiến hành push image: ${imageTag}"
+                                    sh "docker push ${imageTag}"
+                                }
                             }
                         }
                     }
