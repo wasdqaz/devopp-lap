@@ -12,39 +12,39 @@ pipeline {
             }
         }
         
-       stage('Detect Changes') {
-            steps {
-                script {
+       // stage('Detect Changes') {
+       //      steps {
+       //          script {
                     // Fallback to initial commit if GIT_PREVIOUS_SUCCESSFUL_COMMIT is null
-                    def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
+       //              def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
         
-                    echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
+       //              echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
         
-                    def changedFiles = sh(
-                        script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'",
-                        returnStdout: true
-                    ).trim()
+       //              def changedFiles = sh(
+       //                  script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'",
+       //                  returnStdout: true
+       //              ).trim()
         
-                    echo "Changed files:\n${changedFiles}"
+       //              echo "Changed files:\n${changedFiles}"
                 
-                    if (changedFiles) {
-                        def changedModules = changedFiles
-                            .split("\n")
-                            .collect { it.split('/')[0] } // Lấy thư mục cấp 1
-                            .unique()
-                            .findAll { it } // Lọc bỏ giá trị rỗng
-                            .join(',')
+       //              if (changedFiles) {
+       //                  def changedModules = changedFiles
+       //                      .split("\n")
+       //                      .collect { it.split('/')[0] } // Lấy thư mục cấp 1
+       //                      .unique()
+       //                      .findAll { it } // Lọc bỏ giá trị rỗng
+       //                      .join(',')
         
-                        env.MODULES_CHANGED = changedModules
-                        echo "Modules to process: ${env.MODULES_CHANGED}"
-                    } else {
-                        echo "No changes detected - stopping pipeline."
-                        currentBuild.result = 'ABORTED'
-                        return
-                    }
-                }
-            }
-        }
+       //                  env.MODULES_CHANGED = changedModules
+       //                  echo "Modules to process: ${env.MODULES_CHANGED}"
+       //              } else {
+       //                  echo "No changes detected - stopping pipeline."
+       //                  currentBuild.result = 'ABORTED'
+       //                  return
+       //              }
+       //          }
+       //      }
+       //  }
 
 
 
@@ -84,52 +84,61 @@ pipeline {
         //     }
         // }
 
-        stage('Build') {
+        // stage('Build') {
+        //     steps {
+        //         script {
+        //             def servicesList = MODULES_CHANGED.tokenize(',')
+
+        //             if (servicesList.isEmpty()) {
+        //                 echo "No changed services found. Skipping build."
+        //                 return
+        //             }
+
+        //             for (service in servicesList) {
+        //                 echo " Building ${service}..."
+        //                 dir(service) {
+        //                     sh '../mvnw package -DskipTests'
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        stage('Build and Push Docker Image') {
             steps {
                 script {
-                    def servicesList = MODULES_CHANGED.tokenize(',')
+                    def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
 
-                    if (servicesList.isEmpty()) {
-                        echo "No changed services found. Skipping build."
-                        return
-                    }
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh "docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASSWORD}"
 
-                    for (service in servicesList) {
-                        echo " Building ${service}..."
-                        dir(service) {
-                            sh '../mvnw package -DskipTests'
+                        env.DEFAULT_MODULES.tokenize(',').each { module ->
+                            def targetBranch = params."${module}"?.trim()
+                            def imageName = "${DOCKERHUB_USER}/${module}"
+                            def imageTag
+
+                            if (targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()) {
+                                // Checkout branch cụ thể và build service đó
+                                checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
+                                dir(module) {
+                                    echo "Building service: ${module} from branch: ${targetBranch}"
+                                    sh '../mvnw package -DskipTests'
+                                    // Tag image với commit ID của HEAD sau khi build
+                                    def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                                    imageTag = "${imageName}:${builtCommitId}"
+                                    sh "docker build -t ${imageTag} ."
+                                    sh "docker push ${imageTag}"
+                                }
+                            } else {
+                                // Push image mặc định (thường là main hoặc latest)
+                                imageTag = "${imageName}:main" // Hoặc "${imageName}:latest" tùy theo quy ước
+                                echo "Pushing default image for ${module}: ${imageTag}"
+                                sh "docker push ${imageTag}"
+                            }
                         }
                     }
                 }
             }
-        }
-
-        stage('Build & Push Docker Image (CLI)') {
-            steps {
-                script {
-                    def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    def modulesList = env.MODULES_CHANGED.split(',')
-
-                    withCredentials([usernamePassword(
-                        credentialsId: 'docker-hub-credentials',
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_PASSWORD'
-                    )]) {
-                        sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
-
-                        
-                        modulesList.each { module ->
-                            dir(module) {
-                                def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
-                                sh "docker build -t ${imageTag} ."
-                                sh "docker push ${imageTag}"
-                            }
-                        }// module
-                    }
-
-                }
-            }
-        }
 
 
         // stage('Deploy to Kubernetes') {
