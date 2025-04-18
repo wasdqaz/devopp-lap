@@ -132,7 +132,9 @@ pipeline {
                             } else {
                                 imageTag = "${imageName}:main"
                                 echo "Kiểm tra image cục bộ: ${imageTag}"
-                                def imageExists = sh(script: "docker image inspect ${imageTag} > /dev/null 2>&1; echo \$?", returnStdout: true, errorStdout: true).trim().toInteger() == 0
+                                def commandResult = sh(script: "docker image inspect ${imageTag} > /dev/null 2>&1; echo \$?", returnStdout: true)
+                                def imageExists = commandResult.trim().toInteger() == 0
+                                echo "Giá trị của imageExists: ${imageExists}"
                             
                                 if (!imageExists) {
                                     echo "Image '${imageTag}' không tồn tại cục bộ. Tiến hành build."
