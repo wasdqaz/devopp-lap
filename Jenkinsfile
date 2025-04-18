@@ -40,52 +40,35 @@ pipeline {
             }
         }
         
-        stage('Detect Changes') {
-            steps {
-                script {
-                    def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
-                    echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
-                    
-                    def changedFiles = sh(
-                        script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'",
-                        returnStdout: true
-                    ).trim()
-                    
-                    echo "Changed files:\n${changedFiles}"
-                    
-                    if (changedFiles) {
-                        def changedModules = changedFiles
-                            .split("\n")
-                            .collect { it.split('/')[0] } 
-                            .unique()
-                            .findAll { it } 
-                            .join(',')
-        
-                        env.MODULES_CHANGED = changedModules
-                        echo "Modules to process: ${env.MODULES_CHANGED}"
-                    } else {
-                        echo "No changes detected - stopping pipeline."
-                        currentBuild.result = 'ABORTED'
-                        return
-                    }
-                }
-            }
-        }
+        // Bỏ qua phần Detect Changes vì không cần thiết nữa
 
         stage('Build') {
             steps {
                 script {
-                    def servicesList = MODULES_CHANGED.tokenize(',')
+                    def servicesList = [
+                        "spring-petclinic-admin-server",
+                        "spring-petclinic-api-gateway",
+                        "spring-petclinic-config-server",
+                        "spring-petclinic-customers-service",
+                        "spring-petclinic-discovery-server",
+                        "spring-petclinic-genai-service",
+                        "spring-petclinic-vets-service",
+                        "spring-petclinic-visits-service"
+                    ]
                     
-                    if (servicesList.isEmpty()) {
-                        echo "No changed services found. Skipping build."
-                        return
-                    }
+                    // Chỉ build các services có branch được chọn
+                    servicesList.each { service ->
+                        def serviceBranch = "${service}-BRANCH"
+                        def branch = env."${serviceBranch}"
 
-                    for (service in servicesList) {
-                        echo "Building ${service}..."
-                        dir(service) {
-                            sh '../mvnw package -DskipTests'
+                        if (branch) {
+                            echo "Building ${service} from branch ${branch}..."
+                            dir(service) {
+                                sh "git checkout ${branch}" // Checkout branch đã chọn
+                                sh '../mvnw package -DskipTests'
+                            }
+                        } else {
+                            echo "No branch specified for ${service}. Skipping build."
                         }
                     }
                 }
@@ -96,8 +79,17 @@ pipeline {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    def modulesList = env.MODULES_CHANGED.split(',')
-                    
+                    def modulesList = [
+                        "spring-petclinic-admin-server",
+                        "spring-petclinic-api-gateway",
+                        "spring-petclinic-config-server",
+                        "spring-petclinic-customers-service",
+                        "spring-petclinic-discovery-server",
+                        "spring-petclinic-genai-service",
+                        "spring-petclinic-vets-service",
+                        "spring-petclinic-visits-service"
+                    ]
+
                     withCredentials([usernamePassword(
                         credentialsId: 'docker-hub-credentials',
                         usernameVariable: 'DOCKERHUB_USER',
@@ -106,10 +98,13 @@ pipeline {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
 
                         modulesList.each { module -> 
-                            dir(module) {
-                                def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
-                                sh "docker build -t ${imageTag} ."
-                                sh "docker push ${imageTag}"
+                            def branch = env."${module}-BRANCH"
+                            if (branch) {
+                                dir(module) {
+                                    def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
+                                    sh "docker build -t ${imageTag} ."
+                                    sh "docker push ${imageTag}"
+                                }
                             }
                         }
                     }
