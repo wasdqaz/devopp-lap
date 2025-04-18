@@ -108,15 +108,15 @@ pipeline {
             steps {
                 script {
                     def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-
+        
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                         sh "docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASSWORD}"
-
+        
                         env.DEFAULT_MODULES.tokenize(',').each { module ->
                             def targetBranch = params."${module}"?.trim()
                             def imageName = "${DOCKERHUB_USER}/${module}"
                             def imageTag
-
+        
                             if (targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()) {
                                 // Checkout branch cụ thể và build service đó
                                 checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
@@ -130,9 +130,22 @@ pipeline {
                                     sh "docker push ${imageTag}"
                                 }
                             } else {
-                                // Push image mặc định (thường là main hoặc latest)
+                                // Xử lý cho trường hợp mặc định (main hoặc trống)
                                 imageTag = "${imageName}:main" // Hoặc "${imageName}:latest" tùy theo quy ước
-                                echo "Pushing default image for ${module}: ${imageTag}"
+        
+                                // Kiểm tra xem image cục bộ có tồn tại không
+                                def imageExists = sh(script: "docker image inspect ${imageTag} > /dev/null 2>&1; echo \$?", returnStdout: true).trim().toInteger() == 0
+        
+                                if (!imageExists) {
+                                    echo "Image '${imageTag}' không tồn tại cục bộ. Tiến hành build."
+                                    dir(module) {
+                                        sh '../mvnw package -DskipTests' // Build lại (nếu cần)
+                                        sh "docker build -t ${imageTag} ."
+                                    }
+                                } else {
+                                    echo "Image '${imageTag}' đã tồn tại cục bộ. Chỉ tiến hành push."
+                                }
+                                echo "Pushing image: ${imageTag}"
                                 sh "docker push ${imageTag}"
                             }
                         }
