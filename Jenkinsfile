@@ -180,7 +180,7 @@ pipeline {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    def modulesList = MODULES_CHANGED.split(',')
+                    def modulesList = MODULES_CHANGED.tokenize(',')
                     if (modulesList.isEmpty()) {
                         echo "No changed services found. Skipping build."
                         return
@@ -206,9 +206,6 @@ pipeline {
             }
         }
         stage('Update Config Repository') {
-            when {
-                expression { MODULES_CHANGED?.trim() != "" }
-            }
             steps {
                 script {
                     def servicesList = MODULES_CHANGED.tokenize(',')
