@@ -180,7 +180,7 @@ pipeline {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    def modulesList = env.MODULES_CHANGED.split(',')
+                    def modulesList = MODULES_CHANGED.split(',')
 
                     withCredentials([usernamePassword(
                         credentialsId: 'docker-hub-credentials',
