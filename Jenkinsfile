@@ -6,14 +6,15 @@ pipeline {
     }
 
     parameters {
-        script {
-            def modules = environment.DEFAULT_MODULES.tokenize(',')
-            def paramsList = []
-            modules.each { module ->
-                paramsList.add(string(name: module.trim(), defaultValue: 'main', description: "Branch to build for ${module.trim()}"))
-            }
-            return paramsList
-        }
+        string(name: 'spring-petclinic-admin-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-admin-server')
+        string(name: 'spring-petclinic-api-gateway', defaultValue: 'main', description: 'Branch to build for spring-petclinic-api-gateway')
+        string(name: 'spring-petclinic-config-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-config-server')
+        string(name: 'spring-petclinic-customers-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-customers-service')
+        string(name: 'spring-petclinic-discovery-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-discovery-server')
+        string(name: 'spring-petclinic-genai-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-genai-service')
+        string(name: 'spring-petclinic-vets-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-vets-service')
+        string(name: 'spring-petclinic-visits-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-visits-service')
+        // Thêm các parameter cho module khác nếu có trong DEFAULT_MODULES
     }
 
     stages {
