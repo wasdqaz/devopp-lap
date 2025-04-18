@@ -5,18 +5,6 @@ pipeline {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
     }
 
-    parameters {
-        string(name: 'spring-petclinic-admin-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-admin-server')
-        string(name: 'spring-petclinic-api-gateway', defaultValue: 'main', description: 'Branch to build for spring-petclinic-api-gateway')
-        string(name: 'spring-petclinic-config-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-config-server')
-        string(name: 'spring-petclinic-customers-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-customers-service')
-        string(name: 'spring-petclinic-discovery-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-discovery-server')
-        string(name: 'spring-petclinic-genai-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-genai-service')
-        string(name: 'spring-petclinic-vets-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-vets-service')
-        string(name: 'spring-petclinic-visits-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-visits-service')
-        // Thêm các parameter cho module khác nếu có trong DEFAULT_MODULES
-    }
-
     stages {
         stage('Checkout SCM') {
             steps {
@@ -24,39 +12,39 @@ pipeline {
             }
         }
         
-       // stage('Detect Changes') {
-       //      steps {
-       //          script {
+       stage('Detect Changes') {
+            steps {
+                script {
                     // Fallback to initial commit if GIT_PREVIOUS_SUCCESSFUL_COMMIT is null
-       //              def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
+                    def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
         
-       //              echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
+                    echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
         
-       //              def changedFiles = sh(
-       //                  script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'",
-       //                  returnStdout: true
-       //              ).trim()
+                    def changedFiles = sh(
+                        script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'",
+                        returnStdout: true
+                    ).trim()
         
-       //              echo "Changed files:\n${changedFiles}"
+                    echo "Changed files:\n${changedFiles}"
                 
-       //              if (changedFiles) {
-       //                  def changedModules = changedFiles
-       //                      .split("\n")
-       //                      .collect { it.split('/')[0] } // Lấy thư mục cấp 1
-       //                      .unique()
-       //                      .findAll { it } // Lọc bỏ giá trị rỗng
-       //                      .join(',')
+                    if (changedFiles) {
+                        def changedModules = changedFiles
+                            .split("\n")
+                            .collect { it.split('/')[0] } // Lấy thư mục cấp 1
+                            .unique()
+                            .findAll { it } // Lọc bỏ giá trị rỗng
+                            .join(',')
         
-       //                  env.MODULES_CHANGED = changedModules
-       //                  echo "Modules to process: ${env.MODULES_CHANGED}"
-       //              } else {
-       //                  echo "No changes detected - stopping pipeline."
-       //                  currentBuild.result = 'ABORTED'
-       //                  return
-       //              }
-       //          }
-       //      }
-       //  }
+                        env.MODULES_CHANGED = changedModules
+                        echo "Modules to process: ${env.MODULES_CHANGED}"
+                    } else {
+                        echo "No changes detected - stopping pipeline."
+                        currentBuild.result = 'ABORTED'
+                        return
+                    }
+                }
+            }
+        }
 
 
 
@@ -96,34 +84,53 @@ pipeline {
         //     }
         // }
 
-        // stage('Build') {
-        //     steps {
-        //         script {
-        //             def servicesList = MODULES_CHANGED.tokenize(',')
-
-        //             if (servicesList.isEmpty()) {
-        //                 echo "No changed services found. Skipping build."
-        //                 return
-        //             }
-
-        //             for (service in servicesList) {
-        //                 echo " Building ${service}..."
-        //                 dir(service) {
-        //                     sh '../mvnw package -DskipTests'
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
-        stage('Docker Operations') {
+        stage('Build') {
             steps {
                 script {
-                    def dockerFile = load 'JenkinsDocker'
-                    dockerFile.dockerBuildAndPush(env.DEFAULT_MODULES.tokenize(','))
+                    def servicesList = MODULES_CHANGED.tokenize(',')
+
+                    if (servicesList.isEmpty()) {
+                        echo "No changed services found. Skipping build."
+                        return
+                    }
+
+                    for (service in servicesList) {
+                        echo " Building ${service}..."
+                        dir(service) {
+                            sh '../mvnw package -DskipTests'
+                        }
+                    }
                 }
             }
         }
+
+        stage('Build & Push Docker Image (CLI)') {
+            steps {
+                script {
+                    def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def modulesList = env.MODULES_CHANGED.split(',')
+
+                    withCredentials([usernamePassword(
+                        credentialsId: 'docker-hub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_PASSWORD'
+                    )]) {
+                        sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
+
+                        
+                        modulesList.each { module ->
+                            dir(module) {
+                                def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
+                                sh "docker build -t ${imageTag} ."
+                                sh "docker push ${imageTag}"
+                            }
+                        }// module
+                    }
+
+                }
+            }
+        }
+
 
         // stage('Deploy to Kubernetes') {
         //     steps {
