@@ -13,81 +13,37 @@ pipeline {
     }
 
     environment {
-        // Lưu giá trị branch cho mỗi service từ các parameter
-        ADMIN_SERVER_BRANCH = "${params.'admin-server'}"
-        API_GATEWAY_BRANCH = "${params.'api-gateway'}"
-        CONFIG_SERVER_BRANCH = "${params.'config-server'}"
+        ADMIN_SERVER_BRANCH     = "${params.'admin-server'}"
+        API_GATEWAY_BRANCH      = "${params.'api-gateway'}"
+        CONFIG_SERVER_BRANCH    = "${params.'config-server'}"
         CUSTOMERS_SERVICE_BRANCH = "${params.'customers-service'}"
         DISCOVERY_SERVER_BRANCH = "${params.'discovery-server'}"
-        GENAI_SERVICE_BRANCH = "${params.'genai-service'}"
-        VETS_SERVICE_BRANCH = "${params.'vets-service'}"
-        VISITS_SERVICE_BRANCH = "${params.'visits-service'}"
+        GENAI_SERVICE_BRANCH    = "${params.'genai-service'}"
+        VETS_SERVICE_BRANCH     = "${params.'vets-service'}"
+        VISITS_SERVICE_BRANCH   = "${params.'visits-service'}"
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
                 checkout scm
-                // Checkout các branch tương ứng cho từng dịch vụ
-                sh "git checkout ${env.ADMIN_SERVER_BRANCH}"
-                sh "git checkout ${env.API_GATEWAY_BRANCH}"
-                sh "git checkout ${env.CONFIG_SERVER_BRANCH}"
-                sh "git checkout ${env.CUSTOMERS_SERVICE_BRANCH}"
-                sh "git checkout ${env.DISCOVERY_SERVER_BRANCH}"
-                sh "git checkout ${env.GENAI_SERVICE_BRANCH}"
-                sh "git checkout ${env.VETS_SERVICE_BRANCH}"
-                sh "git checkout ${env.VISITS_SERVICE_BRANCH}"
-            }
-        }
-        
-        // Bỏ qua phần Detect Changes vì không cần thiết nữa
-
-        stage('Build') {
-            steps {
-                script {
-                    def servicesList = [
-                        "spring-petclinic-admin-server",
-                        "spring-petclinic-api-gateway",
-                        "spring-petclinic-config-server",
-                        "spring-petclinic-customers-service",
-                        "spring-petclinic-discovery-server",
-                        "spring-petclinic-genai-service",
-                        "spring-petclinic-vets-service",
-                        "spring-petclinic-visits-service"
-                    ]
-                    
-                    // Chỉ build các services có branch được chọn
-                    servicesList.each { service ->
-                        def serviceBranch = "${service}-BRANCH"
-                        def branch = env."${serviceBranch}"
-
-                        if (branch) {
-                            echo "Building ${service} from branch ${branch}..."
-                            dir(service) {
-                                sh "git checkout ${branch}" // Checkout branch đã chọn
-                                sh '../mvnw package -DskipTests'
-                            }
-                        } else {
-                            echo "No branch specified for ${service}. Skipping build."
-                        }
-                    }
-                }
             }
         }
 
-        stage('Build & Push Docker Image (CLI)') {
+        stage('Build & Push Docker Images') {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+
                     def modulesList = [
-                        "spring-petclinic-admin-server",
-                        "spring-petclinic-api-gateway",
-                        "spring-petclinic-config-server",
-                        "spring-petclinic-customers-service",
-                        "spring-petclinic-discovery-server",
-                        "spring-petclinic-genai-service",
-                        "spring-petclinic-vets-service",
-                        "spring-petclinic-visits-service"
+                        [name: "spring-petclinic-admin-server",     envKey: "ADMIN_SERVER_BRANCH"],
+                        [name: "spring-petclinic-api-gateway",      envKey: "API_GATEWAY_BRANCH"],
+                        [name: "spring-petclinic-config-server",    envKey: "CONFIG_SERVER_BRANCH"],
+                        [name: "spring-petclinic-customers-service",envKey: "CUSTOMERS_SERVICE_BRANCH"],
+                        [name: "spring-petclinic-discovery-server", envKey: "DISCOVERY_SERVER_BRANCH"],
+                        [name: "spring-petclinic-genai-service",    envKey: "GENAI_SERVICE_BRANCH"],
+                        [name: "spring-petclinic-vets-service",     envKey: "VETS_SERVICE_BRANCH"],
+                        [name: "spring-petclinic-visits-service",   envKey: "VISITS_SERVICE_BRANCH"]
                     ]
 
                     withCredentials([usernamePassword(
@@ -97,14 +53,29 @@ pipeline {
                     )]) {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
 
-                        modulesList.each { module -> 
-                            def branch = env."${module}-BRANCH"
+                        modulesList.each { module ->
+                            def branch = env[module.envKey]
                             if (branch) {
-                                dir(module) {
-                                    def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
+                                echo "🔄 Handling ${module.name} on branch ${branch}"
+
+                                dir(module.name) {
+                                    // Checkout đúng branch
+                                    sh "git checkout ${branch}"
+
+                                    // Build JAR
+                                    sh "../mvnw package -DskipTests"
+
+                                    // Build Docker image
+                                    def imageTag = "${DOCKERHUB_USER}/${module.name}:${COMMIT_ID}"
+                                    echo "🐳 Building Docker image: ${imageTag}"
                                     sh "docker build -t ${imageTag} ."
+
+                                    // Push Docker image
+                                    echo "📤 Pushing Docker image: ${imageTag}"
                                     sh "docker push ${imageTag}"
                                 }
+                            } else {
+                                echo "⚠️ No branch configured for ${module.name}, skipping..."
                             }
                         }
                     }
@@ -115,13 +86,13 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline execution completed'
+            echo '📌 Pipeline execution completed'
         }
         success {
-            echo 'Pipeline finished successfully'
+            echo '✅ Pipeline finished successfully'
         }
         failure {
-            echo 'Pipeline failed. Check logs for errors'
+            echo '❌ Pipeline failed. Check logs for errors'
         }
     }
 }
