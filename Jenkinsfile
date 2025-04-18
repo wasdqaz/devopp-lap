@@ -51,8 +51,8 @@ pipeline {
                         usernameVariable: 'DOCKERHUB_USER',
                         passwordVariable: 'DOCKERHUB_PASSWORD'
                     )]) {
-                        // ✅ FIXED: sử dụng biến đúng cách, không escape
-                        sh "docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASSWORD}"
+                        // ✅ FIXED: sử dụng --password-stdin thay vì -p để login an toàn
+                        sh "echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USER} --password-stdin"
 
                         modulesList.each { module ->
                             def branch = env[module.envKey]
