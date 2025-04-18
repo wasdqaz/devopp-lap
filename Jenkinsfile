@@ -9,7 +9,7 @@ pipeline {
         string(name: 'discovery-server', defaultValue: 'main', description: 'Branch for discovery-server')
         string(name: 'genai-service', defaultValue: 'main', description: 'Branch for genai-service')
         string(name: 'vets-service', defaultValue: 'main', description: 'Branch for vets-service')
-        string(name: 'visits-service', defaultValue: 'main', description: 'Branch for visits-service') // thêm visits-service vào parameter
+        string(name: 'visits-service', defaultValue: 'main', description: 'Branch for visits-service')
     }
 
     environment {
@@ -20,7 +20,7 @@ pipeline {
         DISCOVERY_SERVER_BRANCH = "${params.'discovery-server'}"
         GENAI_SERVICE_BRANCH = "${params.'genai-service'}"
         VETS_SERVICE_BRANCH = "${params.'vets-service'}"
-        VISITS_SERVICE_BRANCH = "${params.'visits-service'}" // lấy giá trị từ parameter
+        VISITS_SERVICE_BRANCH = "${params.'visits-service'}"
     }
 
     stages {
@@ -41,11 +41,12 @@ pipeline {
                         "spring-petclinic-discovery-server": env.DISCOVERY_SERVER_BRANCH,
                         "spring-petclinic-genai-service": env.GENAI_SERVICE_BRANCH,
                         "spring-petclinic-vets-service": env.VETS_SERVICE_BRANCH,
-                        "spring-petclinic-visits-service": env.VISITS_SERVICE_BRANCH // lấy giá trị từ parameter
+                        "spring-petclinic-visits-service": env.VISITS_SERVICE_BRANCH
                     ]
 
-                    servicesMap.each { service, branch -> 
-                        // Kiểm tra nếu nhánh không phải "main" thì mới build
+                    servicesMap.each { service, branch ->
+                        echo "Service: ${service}, Branch: ${branch}"  // Log kiểm tra
+                        
                         if (branch != "main") {
                             echo "Building ${service} from branch ${branch}..."
                             dir(service) {
@@ -82,8 +83,9 @@ pipeline {
                     )]) {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
 
-                        modulesList.each { module -> 
+                        modulesList.each { module ->
                             def branch = env."${module.replace('-', '_').toUpperCase()}_BRANCH"
+                            echo "Building Docker image for ${module} with branch ${branch}"  // Log kiểm tra
                             if (branch) {
                                 dir(module) {
                                     def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
