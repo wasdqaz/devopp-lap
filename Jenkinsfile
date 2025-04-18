@@ -9,11 +9,10 @@ pipeline {
         string(name: 'discovery-server', defaultValue: 'main', description: 'Branch for discovery-server')
         string(name: 'genai-service', defaultValue: 'main', description: 'Branch for genai-service')
         string(name: 'vets-service', defaultValue: 'main', description: 'Branch for vets-service')
-        string(name: 'visits-service', defaultValue: 'main', description: 'Branch for visits-service')
+        // Bỏ visits-service ra khỏi parameter
     }
 
     environment {
-        // Lưu giá trị branch cho mỗi service từ các parameter
         ADMIN_SERVER_BRANCH = "${params.'admin-server'}"
         API_GATEWAY_BRANCH = "${params.'api-gateway'}"
         CONFIG_SERVER_BRANCH = "${params.'config-server'}"
@@ -21,54 +20,35 @@ pipeline {
         DISCOVERY_SERVER_BRANCH = "${params.'discovery-server'}"
         GENAI_SERVICE_BRANCH = "${params.'genai-service'}"
         VETS_SERVICE_BRANCH = "${params.'vets-service'}"
-        VISITS_SERVICE_BRANCH = "${params.'visits-service'}"
+        VISITS_SERVICE_BRANCH = "main" // luôn là main
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
                 checkout scm
-                // Checkout các branch tương ứng cho từng dịch vụ
-                sh "git checkout ${env.ADMIN_SERVER_BRANCH}"
-                sh "git checkout ${env.API_GATEWAY_BRANCH}"
-                sh "git checkout ${env.CONFIG_SERVER_BRANCH}"
-                sh "git checkout ${env.CUSTOMERS_SERVICE_BRANCH}"
-                sh "git checkout ${env.DISCOVERY_SERVER_BRANCH}"
-                sh "git checkout ${env.GENAI_SERVICE_BRANCH}"
-                sh "git checkout ${env.VETS_SERVICE_BRANCH}"
-                sh "git checkout ${env.VISITS_SERVICE_BRANCH}"
             }
         }
-        
-        // Bỏ qua phần Detect Changes vì không cần thiết nữa
 
         stage('Build') {
             steps {
                 script {
-                    def servicesList = [
-                        "spring-petclinic-admin-server",
-                        "spring-petclinic-api-gateway",
-                        "spring-petclinic-config-server",
-                        "spring-petclinic-customers-service",
-                        "spring-petclinic-discovery-server",
-                        "spring-petclinic-genai-service",
-                        "spring-petclinic-vets-service",
-                        "spring-petclinic-visits-service"
+                    def servicesMap = [
+                        "spring-petclinic-admin-server": env.ADMIN_SERVER_BRANCH,
+                        "spring-petclinic-api-gateway": env.API_GATEWAY_BRANCH,
+                        "spring-petclinic-config-server": env.CONFIG_SERVER_BRANCH,
+                        "spring-petclinic-customers-service": env.CUSTOMERS_SERVICE_BRANCH,
+                        "spring-petclinic-discovery-server": env.DISCOVERY_SERVER_BRANCH,
+                        "spring-petclinic-genai-service": env.GENAI_SERVICE_BRANCH,
+                        "spring-petclinic-vets-service": env.VETS_SERVICE_BRANCH,
+                        "spring-petclinic-visits-service": env.VISITS_SERVICE_BRANCH // luôn có giá trị
                     ]
-                    
-                    // Chỉ build các services có branch được chọn
-                    servicesList.each { service ->
-                        def serviceBranch = "${service}-BRANCH"
-                        def branch = env."${serviceBranch}"
 
-                        if (branch) {
-                            echo "Building ${service} from branch ${branch}..."
-                            dir(service) {
-                                sh "git checkout ${branch}" // Checkout branch đã chọn
-                                sh '../mvnw package -DskipTests'
-                            }
-                        } else {
-                            echo "No branch specified for ${service}. Skipping build."
+                    servicesMap.each { service, branch ->
+                        echo "Building ${service} from branch ${branch}..."
+                        dir(service) {
+                            sh "git checkout ${branch}"
+                            sh "../mvnw package -DskipTests"
                         }
                     }
                 }
@@ -97,8 +77,8 @@ pipeline {
                     )]) {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
 
-                        modulesList.each { module -> 
-                            def branch = env."${module}-BRANCH"
+                        modulesList.each { module ->
+                            def branch = env."${module.replace('-', '_').toUpperCase()}_BRANCH"
                             if (branch) {
                                 dir(module) {
                                     def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
