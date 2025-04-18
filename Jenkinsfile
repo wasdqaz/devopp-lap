@@ -226,6 +226,8 @@ pipeline {
     post {
         always {
             echo 'Pipeline execution completed'
+            echo 'Clean up work space'    
+            cleanWs()
         }
         success {
             echo 'Pipeline finished successfully'
