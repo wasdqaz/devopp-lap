@@ -1,9 +1,7 @@
 pipeline {
     agent any
     
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '10', daysToKeepStr: '7'))
-    }
+   
     
     environment {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
