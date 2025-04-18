@@ -13,14 +13,14 @@ pipeline {
     }
 
     environment {
-        ADMIN_SERVER_BRANCH     = "${params.'admin-server'}"
-        API_GATEWAY_BRANCH      = "${params.'api-gateway'}"
-        CONFIG_SERVER_BRANCH    = "${params.'config-server'}"
+        ADMIN_SERVER_BRANCH      = "${params.'admin-server'}"
+        API_GATEWAY_BRANCH       = "${params.'api-gateway'}"
+        CONFIG_SERVER_BRANCH     = "${params.'config-server'}"
         CUSTOMERS_SERVICE_BRANCH = "${params.'customers-service'}"
-        DISCOVERY_SERVER_BRANCH = "${params.'discovery-server'}"
-        GENAI_SERVICE_BRANCH    = "${params.'genai-service'}"
-        VETS_SERVICE_BRANCH     = "${params.'vets-service'}"
-        VISITS_SERVICE_BRANCH   = "${params.'visits-service'}"
+        DISCOVERY_SERVER_BRANCH  = "${params.'discovery-server'}"
+        GENAI_SERVICE_BRANCH     = "${params.'genai-service'}"
+        VETS_SERVICE_BRANCH      = "${params.'vets-service'}"
+        VISITS_SERVICE_BRANCH    = "${params.'visits-service'}"
     }
 
     stages {
@@ -36,14 +36,14 @@ pipeline {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
 
                     def modulesList = [
-                        [name: "spring-petclinic-admin-server",     envKey: "ADMIN_SERVER_BRANCH"],
-                        [name: "spring-petclinic-api-gateway",      envKey: "API_GATEWAY_BRANCH"],
-                        [name: "spring-petclinic-config-server",    envKey: "CONFIG_SERVER_BRANCH"],
-                        [name: "spring-petclinic-customers-service",envKey: "CUSTOMERS_SERVICE_BRANCH"],
-                        [name: "spring-petclinic-discovery-server", envKey: "DISCOVERY_SERVER_BRANCH"],
-                        [name: "spring-petclinic-genai-service",    envKey: "GENAI_SERVICE_BRANCH"],
-                        [name: "spring-petclinic-vets-service",     envKey: "VETS_SERVICE_BRANCH"],
-                        [name: "spring-petclinic-visits-service",   envKey: "VISITS_SERVICE_BRANCH"]
+                        [name: "spring-petclinic-admin-server",      envKey: "ADMIN_SERVER_BRANCH"],
+                        [name: "spring-petclinic-api-gateway",       envKey: "API_GATEWAY_BRANCH"],
+                        [name: "spring-petclinic-config-server",     envKey: "CONFIG_SERVER_BRANCH"],
+                        [name: "spring-petclinic-customers-service", envKey: "CUSTOMERS_SERVICE_BRANCH"],
+                        [name: "spring-petclinic-discovery-server",  envKey: "DISCOVERY_SERVER_BRANCH"],
+                        [name: "spring-petclinic-genai-service",     envKey: "GENAI_SERVICE_BRANCH"],
+                        [name: "spring-petclinic-vets-service",      envKey: "VETS_SERVICE_BRANCH"],
+                        [name: "spring-petclinic-visits-service",    envKey: "VISITS_SERVICE_BRANCH"]
                     ]
 
                     withCredentials([usernamePassword(
@@ -51,7 +51,8 @@ pipeline {
                         usernameVariable: 'DOCKERHUB_USER',
                         passwordVariable: 'DOCKERHUB_PASSWORD'
                     )]) {
-                        sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
+                        // ✅ FIXED: sử dụng biến đúng cách, không escape
+                        sh "docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASSWORD}"
 
                         modulesList.each { module ->
                             def branch = env[module.envKey]
