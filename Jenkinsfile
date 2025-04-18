@@ -97,7 +97,7 @@ pipeline {
                     for (service in servicesList) {
                         echo " Building ${service}..."
                         dir(service) {
-                            sh './mvnw clean install -P buildDocker'
+                            sh '../mvnw package -DskipTests'
                         }
                     }
                 }
