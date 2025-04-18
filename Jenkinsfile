@@ -134,11 +134,11 @@ pipeline {
         }
         stage('Update GitOps Repository') {
             when {
-                expression { SERVICES_CHANGED?.trim() != "" }
+                expression { MODULES_CHANGED?.trim() != "" }
             }
             steps {
                 script {
-                    def servicesList = SERVICES_CHANGED.tokenize(',')
+                    def servicesList = MODULES_CHANGED.tokenize(',')
                     def commitHash = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     
                     // Create a temporary directory for the GitOps repo
@@ -182,7 +182,7 @@ pipeline {
                             # Only commit if there are changes
                             if ! git diff --quiet; then
                                 git add .
-                                git commit -m "Update image tags for ${SERVICES_CHANGED} to ${commitHash}"
+                                git commit -m "Update image tags for ${MODULES_CHANGED} to ${commitHash}"
                                 git push
                                 echo "✅ Successfully updated GitOps repository"
                             else
