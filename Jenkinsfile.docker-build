@@ -52,23 +52,15 @@ pipeline {
                                     sh "docker push ${imageTag}"
                                 }
                             } else {
-                                imageTag = "${imageName}:main"
+                                imageTag = "${imageName}:latest"
                                 echo "Kiểm tra image cục bộ: ${imageTag}"
                                 def checkImageCommand = "docker images -q ${imageTag}"
                                 def imageId = sh(script: checkImageCommand, returnStdout: true).trim()
                                 def imageExists = !imageId.isEmpty()
                                 echo "Image ID: ${imageId}"
                                 echo "Image exists: ${imageExists}"
-                                
-                                if (!imageExists) {
-                                    echo "Image '${imageTag}' không tồn tại cục bộ. Tiến hành build."
-                                    dir(module) {
-                                        sh '../mvnw package -DskipTests'
-                                        sh "docker build -t ${imageTag} ."
-                                    }
-                                } else {
-                                    echo "Image '${imageTag}' đã tồn tại cục bộ."
-                                }
+                                sh '../mvnw package -DskipTests'
+                                sh "docker build -t ${imageTag} ."
                                 echo "Pushing image: ${imageTag}"
                                 sh "docker push ${imageTag}"
                             }
