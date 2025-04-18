@@ -114,10 +114,12 @@ pipeline {
         
                         env.DEFAULT_MODULES.tokenize(',').each { module ->
                             def targetBranch = params."${module}"?.trim()
+                            echo "Parameter '${module}': ${targetBranch}"
                             def imageName = "${DOCKERHUB_USER}/${module}"
                             def imageTag
         
                             if (targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()) {
+                                echo "Condition 'targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()' is true. targetBranch: '${targetBranch}'"
                                 // Checkout branch cụ thể và build service đó
                                 checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
                                 dir(module) {
