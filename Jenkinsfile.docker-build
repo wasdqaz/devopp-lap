@@ -38,7 +38,7 @@ pipeline {
                             def imageName = "${DOCKERHUB_USER}/${module}"
                             def imageTag = "${imageName}:latest"
 
-                            if (targetBranch != main){
+                            if (targetBranch != "main"){
                                 imageTag = "${imageName}:${commitId}"
                             }
                             // Checkout branch cụ thể và build service đó
