@@ -181,7 +181,10 @@ pipeline {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     def modulesList = MODULES_CHANGED.split(',')
-
+                    if (modulesList.isEmpty()) {
+                        echo "No changed services found. Skipping build."
+                        return
+                    }
                     withCredentials([usernamePassword(
                         credentialsId: 'docker-hub-credentials',
                         usernameVariable: 'DOCKERHUB_USER',
@@ -209,6 +212,10 @@ pipeline {
             steps {
                 script {
                     def servicesList = MODULES_CHANGED.tokenize(',')
+                    if (servicesList.isEmpty()) {
+                        echo "No changed services found. Skipping GitOps update."
+                        return
+                    }
                     def commitHash = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     
                     // Create a temporary directory for the GitOps repo
