@@ -37,6 +37,7 @@ pipeline {
                             echo "Parameter '${module}': ${targetBranch}"
                             def imageName = "${DOCKERHUB_USER}/${module}"
                             def imageTag = "${imageName}:latest"
+                            echo "Building service: ${module} from branch: ${targetBranch}"
 
                             if (targetBranch != "main"){
                                 imageTag = "${imageName}:${commitId}"
