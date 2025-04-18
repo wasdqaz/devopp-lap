@@ -1,116 +1,196 @@
 pipeline {
     agent any
 
-    parameters {
-        string(name: 'admin-server', defaultValue: 'main', description: 'Branch for admin-server')
-        string(name: 'api-gateway', defaultValue: 'main', description: 'Branch for api-gateway')
-        string(name: 'config-server', defaultValue: 'main', description: 'Branch for config-server')
-        string(name: 'customers-service', defaultValue: 'main', description: 'Branch for customers-service')
-        string(name: 'discovery-server', defaultValue: 'main', description: 'Branch for discovery-server')
-        string(name: 'genai-service', defaultValue: 'main', description: 'Branch for genai-service')
-        string(name: 'vets-service', defaultValue: 'main', description: 'Branch for vets-service')
-        string(name: 'visits-service', defaultValue: 'main', description: 'Branch for visits-service')
+    environment {
+        DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
     }
 
-    environment {
-        DOCKER_IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+    parameters {
+        string(name: 'spring-petclinic-admin-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-admin-server')
+        string(name: 'spring-petclinic-api-gateway', defaultValue: 'main', description: 'Branch to build for spring-petclinic-api-gateway')
+        string(name: 'spring-petclinic-config-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-config-server')
+        string(name: 'spring-petclinic-customers-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-customers-service')
+        string(name: 'spring-petclinic-discovery-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-discovery-server')
+        string(name: 'spring-petclinic-genai-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-genai-service')
+        string(name: 'spring-petclinic-vets-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-vets-service')
+        string(name: 'spring-petclinic-visits-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-visits-service')
+        // Thêm các parameter cho module khác nếu có trong DEFAULT_MODULES
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
-                echo "Checking out the SCM repository"
                 checkout scm
             }
         }
+        
+       // stage('Detect Changes') {
+       //      steps {
+       //          script {
+                    // Fallback to initial commit if GIT_PREVIOUS_SUCCESSFUL_COMMIT is null
+       //              def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
+        
+       //              echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
+        
+       //              def changedFiles = sh(
+       //                  script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'",
+       //                  returnStdout: true
+       //              ).trim()
+        
+       //              echo "Changed files:\n${changedFiles}"
+                
+       //              if (changedFiles) {
+       //                  def changedModules = changedFiles
+       //                      .split("\n")
+       //                      .collect { it.split('/')[0] } // Lấy thư mục cấp 1
+       //                      .unique()
+       //                      .findAll { it } // Lọc bỏ giá trị rỗng
+       //                      .join(',')
+        
+       //                  env.MODULES_CHANGED = changedModules
+       //                  echo "Modules to process: ${env.MODULES_CHANGED}"
+       //              } else {
+       //                  echo "No changes detected - stopping pipeline."
+       //                  currentBuild.result = 'ABORTED'
+       //                  return
+       //              }
+       //          }
+       //      }
+       //  }
 
-        stage('Build & Package Services') {
+
+
+        // stage('Test') {
+        //     steps {
+        //         script {
+        //             def modulesList = env.MODULES_CHANGED.split(',')
+
+        //             modulesList.each { module ->
+        //                 dir(module) {
+        //                     echo "Running tests for: ${module}"
+        //                     // Run JaCoCo agent during test phase
+        //                     sh "../mvnw clean verify -Pspringboot"
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             script {
+        //                 def modulesList = env.MODULES_CHANGED.split(',')
+
+        //                 modulesList.each { module ->
+        //                     dir(module) {
+        //                         echo "📊 Analyzing JaCoCo coverage for: ${module}"
+        //                         // Dùng jacoco plugin trong module tương ứng
+        //                         jacoco(
+        //                             execPattern: 'target/jacoco.exec',
+        //                             classPattern: 'target/classes',
+        //                             sourcePattern: 'src/main/java',
+        //                             exclusionPattern: 'src/test*'
+        //                         )
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        // stage('Build') {
+        //     steps {
+        //         script {
+        //             def servicesList = MODULES_CHANGED.tokenize(',')
+
+        //             if (servicesList.isEmpty()) {
+        //                 echo "No changed services found. Skipping build."
+        //                 return
+        //             }
+
+        //             for (service in servicesList) {
+        //                 echo " Building ${service}..."
+        //                 dir(service) {
+        //                     sh '../mvnw package -DskipTests'
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        stage('Build and Push Docker Image') {
             steps {
                 script {
-                    echo "Start building services with specified branches..."
-                    
-                    def servicesMap = [
-                        "spring-petclinic-admin-server"    : params.'admin-server',
-                        "spring-petclinic-api-gateway"     : params.'api-gateway',
-                        "spring-petclinic-config-server"   : params.'config-server',
-                        "spring-petclinic-customers-service": params.'customers-service',
-                        "spring-petclinic-discovery-server": params.'discovery-server',
-                        "spring-petclinic-genai-service"   : params.'genai-service',
-                        "spring-petclinic-vets-service"    : params.'vets-service',
-                        "spring-petclinic-visits-service"  : params.'visits-service'
-                    ]
-
-                    servicesMap.each { service, branch ->
-                        echo "Service: ${service}, Branch: ${branch}"
-                        if (branch != "main") {
-                            dir(service) {
-                                echo "Checking out branch ${branch} for ${service}"
-                                def checkoutStatus = sh(script: "git checkout ${branch}", returnStatus: true)
-                                if (checkoutStatus == 0) {
-                                    echo "Successfully checked out ${branch} for ${service}"
-                                    echo "Building ${service} using Maven"
-                                    def buildStatus = sh(script: "../mvnw package -DskipTests", returnStatus: true)
-                                    if (buildStatus == 0) {
-                                        echo "Successfully built ${service}."
-                                    } else {
-                                        echo "Build failed for ${service}. Check Maven logs."
-                                    }
-                                } else {
-                                    echo "Failed to checkout branch ${branch} for ${service}. Skipping build."
-                                }
-                            }
-                        } else {
-                            echo "Skipping ${service} as it is on the main branch."
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Build & Push Docker Images') {
-            steps {
-                script {
-                    def servicesMap = [
-                        "spring-petclinic-admin-server"    : params.'admin-server',
-                        "spring-petclinic-api-gateway"     : params.'api-gateway',
-                        "spring-petclinic-config-server"   : params.'config-server',
-                        "spring-petclinic-customers-service": params.'customers-service',
-                        "spring-petclinic-discovery-server": params.'discovery-server',
-                        "spring-petclinic-genai-service"   : params.'genai-service',
-                        "spring-petclinic-vets-service"    : params.'vets-service',
-                        "spring-petclinic-visits-service"  : params.'visits-service'
-                    ]
-
-                    withCredentials([usernamePassword(
-                        credentialsId: 'docker-hub-credentials',
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_PASSWORD'
-                    )]) {
-                        echo "Logging in to Docker Hub"
-                        sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
-
-                        servicesMap.each { service, branch ->
-                            echo "Service: ${service}, Branch: ${branch}"
-                            if (branch != "main") {
-                                dir(service) {
-                                    def imageTag = "${DOCKERHUB_USER}/${service}:${env.DOCKER_IMAGE_TAG}"
-                                    echo "Building Docker image for ${service} with tag ${imageTag}"
-                                    def dockerBuildStatus = sh(script: "docker build -t ${imageTag} .", returnStatus: true)
-                                    if (dockerBuildStatus == 0) {
-                                        echo "Successfully built Docker image for ${service}."
-                                        sh "docker push ${imageTag}"
-                                    } else {
-                                        echo "Failed to build Docker image for ${service}. Check Docker logs."
-                                    }
+                    def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+        
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh "docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASSWORD}"
+        
+                        env.DEFAULT_MODULES.tokenize(',').each { module ->
+                            def targetBranch = params."${module}"?.trim()
+                            echo "Parameter '${module}': ${targetBranch}"
+                            def imageName = "${DOCKERHUB_USER}/${module}"
+                            def imageTag
+        
+                            if (targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()) {
+                                echo "Condition 'targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()' is true. targetBranch: '${targetBranch}'"
+                                // Checkout branch cụ thể và build service đó
+                                checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
+                                dir(module) {
+                                    echo "Building service: ${module} from branch: ${targetBranch}"
+                                    sh '../mvnw package -DskipTests'
+                                    // Tag image với commit ID của HEAD sau khi build
+                                    def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                                    imageTag = "${imageName}:${builtCommitId}"
+                                    sh "docker build -t ${imageTag} ."
+                                    sh "docker push ${imageTag}"
                                 }
                             } else {
-                                echo "Skipping Docker build for ${service} (on main branch)."
+                                imageTag = "${imageName}:main"
+                                echo "Kiểm tra image cục bộ: ${imageTag}"
+                                def checkImageCommand = "docker images -q ${imageTag}"
+                                def imageId = sh(script: checkImageCommand, returnStdout: true).trim()
+                                def imageExists = !imageId.isEmpty()
+                                echo "Image ID: ${imageId}"
+                                echo "Image exists: ${imageExists}"
+                                
+                                if (!imageExists) {
+                                    echo "Image '${imageTag}' không tồn tại cục bộ. Tiến hành build."
+                                    dir(module) {
+                                        sh '../mvnw package -DskipTests'
+                                        sh "docker build -t ${imageTag} ."
+                                    }
+                                } else {
+                                    echo "Image '${imageTag}' đã tồn tại cục bộ."
+                                }
+                                echo "Pushing image: ${imageTag}"
+                                sh "docker push ${imageTag}"
                             }
                         }
                     }
                 }
             }
         }
+
+        // stage('Deploy to Kubernetes') {
+        //     steps {
+        //         script {
+        //             def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+        //             def modulesList = env.MODULES_CHANGED.split(',')
+
+        //             modulesList.each { module ->
+        //                 echo " Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
+
+        //                 // Update image tag in deployment YAML
+        //                 sh """
+        //                 sed -i 's|image: ${DOCKER_HUB_USERNAME}/${module}:.*|image: ${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}|' k8s/${module}/deployment.yaml
+        //                 """
+
+        //                 // Apply to Kubernetes
+        //                 sh "kubectl apply -f k8s/${module}/deployment.yaml"
+        //             }
+        //         }
+        //     }
+        // }
+
     }
 
     post {
