@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
-    }
-
     parameters {
         string(name: 'admin-server', defaultValue: 'main', description: 'Branch for admin-server')
         string(name: 'api-gateway', defaultValue: 'main', description: 'Branch for api-gateway')
@@ -16,34 +12,53 @@ pipeline {
         string(name: 'visits-service', defaultValue: 'main', description: 'Branch for visits-service')
     }
 
+    environment {
+        // Lưu giá trị branch cho mỗi service từ các parameter
+        ADMIN_SERVER_BRANCH = "${params.'admin-server'}"
+        API_GATEWAY_BRANCH = "${params.'api-gateway'}"
+        CONFIG_SERVER_BRANCH = "${params.'config-server'}"
+        CUSTOMERS_SERVICE_BRANCH = "${params.'customers-service'}"
+        DISCOVERY_SERVER_BRANCH = "${params.'discovery-server'}"
+        GENAI_SERVICE_BRANCH = "${params.'genai-service'}"
+        VETS_SERVICE_BRANCH = "${params.'vets-service'}"
+        VISITS_SERVICE_BRANCH = "${params.'visits-service'}"
+    }
+
     stages {
         stage('Checkout SCM') {
             steps {
                 checkout scm
+                // Checkout các branch tương ứng cho từng dịch vụ
+                sh "git checkout ${env.ADMIN_SERVER_BRANCH}"
+                sh "git checkout ${env.API_GATEWAY_BRANCH}"
+                sh "git checkout ${env.CONFIG_SERVER_BRANCH}"
+                sh "git checkout ${env.CUSTOMERS_SERVICE_BRANCH}"
+                sh "git checkout ${env.DISCOVERY_SERVER_BRANCH}"
+                sh "git checkout ${env.GENAI_SERVICE_BRANCH}"
+                sh "git checkout ${env.VETS_SERVICE_BRANCH}"
+                sh "git checkout ${env.VISITS_SERVICE_BRANCH}"
             }
         }
-
+        
         stage('Detect Changes') {
             steps {
                 script {
-                    // Fallback to initial commit if GIT_PREVIOUS_SUCCESSFUL_COMMIT is null
                     def previousCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: 'HEAD~1'
-        
                     echo "Comparing changes between ${previousCommit} and ${env.GIT_COMMIT}"
-        
+                    
                     def changedFiles = sh(
                         script: "git diff --name-only ${previousCommit} ${env.GIT_COMMIT} -- . ':(exclude)Jenkinsfile' ':(exclude)pom.xml'",
                         returnStdout: true
                     ).trim()
-        
+                    
                     echo "Changed files:\n${changedFiles}"
-                
+                    
                     if (changedFiles) {
                         def changedModules = changedFiles
                             .split("\n")
-                            .collect { it.split('/')[0] } // Lấy thư mục cấp 1
+                            .collect { it.split('/')[0] } 
                             .unique()
-                            .findAll { it } // Lọc bỏ giá trị rỗng
+                            .findAll { it } 
                             .join(',')
         
                         env.MODULES_CHANGED = changedModules
@@ -57,34 +72,19 @@ pipeline {
             }
         }
 
-        // Build stage updated to process modules based on parameters
         stage('Build') {
             steps {
                 script {
                     def servicesList = MODULES_CHANGED.tokenize(',')
-                    def selectedServices = []
-
-                    // Check which services were selected via parameters
-                    if (params.admin-server != 'main') selectedServices.add('spring-petclinic-admin-server')
-                    if (params.api-gateway != 'main') selectedServices.add('spring-petclinic-api-gateway')
-                    if (params.config-server != 'main') selectedServices.add('spring-petclinic-config-server')
-                    if (params.customers-service != 'main') selectedServices.add('spring-petclinic-customers-service')
-                    if (params.discovery-server != 'main') selectedServices.add('spring-petclinic-discovery-server')
-                    if (params.genai-service != 'main') selectedServices.add('spring-petclinic-genai-service')
-                    if (params.vets-service != 'main') selectedServices.add('spring-petclinic-vets-service')
-                    if (params.visits-service != 'main') selectedServices.add('spring-petclinic-visits-service')
-
-                    if (selectedServices.isEmpty()) {
-                        echo "No selected services found. Skipping build."
+                    
+                    if (servicesList.isEmpty()) {
+                        echo "No changed services found. Skipping build."
                         return
                     }
 
-                    // Build only the selected services
-                    for (service in selectedServices) {
+                    for (service in servicesList) {
                         echo "Building ${service}..."
                         dir(service) {
-                            // Checkout the selected branch for the service
-                            sh "git checkout ${params[service]}"
                             sh '../mvnw package -DskipTests'
                         }
                     }
@@ -96,18 +96,8 @@ pipeline {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    def selectedServices = []
-
-                    // Check which services were selected via parameters
-                    if (params.admin-server != 'main') selectedServices.add('spring-petclinic-admin-server')
-                    if (params.api-gateway != 'main') selectedServices.add('spring-petclinic-api-gateway')
-                    if (params.config-server != 'main') selectedServices.add('spring-petclinic-config-server')
-                    if (params.customers-service != 'main') selectedServices.add('spring-petclinic-customers-service')
-                    if (params.discovery-server != 'main') selectedServices.add('spring-petclinic-discovery-server')
-                    if (params.genai-service != 'main') selectedServices.add('spring-petclinic-genai-service')
-                    if (params.vets-service != 'main') selectedServices.add('spring-petclinic-vets-service')
-                    if (params.visits-service != 'main') selectedServices.add('spring-petclinic-visits-service')
-
+                    def modulesList = env.MODULES_CHANGED.split(',')
+                    
                     withCredentials([usernamePassword(
                         credentialsId: 'docker-hub-credentials',
                         usernameVariable: 'DOCKERHUB_USER',
@@ -115,9 +105,8 @@ pipeline {
                     )]) {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
 
-                        selectedServices.each { module ->
+                        modulesList.each { module -> 
                             dir(module) {
-                                // Sửa đổi tag image thành ${module}:${COMMIT_ID}
                                 def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
                                 sh "docker build -t ${imageTag} ."
                                 sh "docker push ${imageTag}"
@@ -127,28 +116,6 @@ pipeline {
                 }
             }
         }
-
-        // stage('Deploy to Kubernetes') {
-        //     steps {
-        //         script {
-        //             def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-        //             def modulesList = env.MODULES_CHANGED.split(',')
-
-        //             modulesList.each { module -> 
-        //                 echo "Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
-
-        //                 // Update image tag in deployment YAML
-        //                 sh """
-        //                 sed -i 's|image: ${DOCKER_HUB_USERNAME}/${module}:.*|image: ${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}|' k8s/${module}/deployment.yaml
-        //                 """
-
-        //                 // Apply to Kubernetes
-        //                 sh "kubectl apply -f k8s/${module}/deployment.yaml"
-        //             }
-        //         }
-        //     }
-        // }
-
     }
 
     post {
