@@ -132,7 +132,7 @@ pipeline {
                             } else {
                                 imageTag = "${imageName}:main"
                                 echo "Kiểm tra image cục bộ: ${imageTag}"
-                                def commandResult = sh(script: "docker image inspect ${imageTag} > /dev/null 2>&1; echo \$?", returnStdout: true)
+                                def commandResult = sh(script: "docker image inspect ${imageTag} > /dev/null 2>&1; echo \$?", returnStdout: true, failOnError: false)
                                 def imageExists = commandResult.trim().toInteger() == 0
                                 echo "Giá trị của imageExists: ${imageExists}"
                             
