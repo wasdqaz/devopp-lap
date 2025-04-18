@@ -301,6 +301,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline execution completed'
+            echo 'Module: ${MODULES_CHANGED}'
             echo 'Clean up work space'    
             cleanWs()
         }
