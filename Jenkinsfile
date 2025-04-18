@@ -53,9 +53,19 @@ pipeline {
                             echo "Building ${service} from branch ${branch}..."
                             dir(service) {
                                 echo "Checking out branch ${branch} for ${service}"
-                                sh "git checkout ${branch}"
-                                echo "Building ${service} using Maven"
-                                sh "../mvnw package -DskipTests"
+                                def checkoutStatus = sh(script: "git checkout ${branch}", returnStatus: true)
+                                if (checkoutStatus == 0) {
+                                    echo "Successfully checked out ${branch} for ${service}"
+                                    echo "Building ${service} using Maven"
+                                    def buildStatus = sh(script: "../mvnw package -DskipTests", returnStatus: true)
+                                    if (buildStatus == 0) {
+                                        echo "Successfully built ${service}."
+                                    } else {
+                                        echo "Build failed for ${service}. Check Maven logs."
+                                    }
+                                } else {
+                                    echo "Failed to checkout branch ${branch} for ${service}. Skipping build."
+                                }
                             }
                         } else {
                             echo "Skipping ${service} as it is on the main branch."
@@ -97,8 +107,13 @@ pipeline {
                                 dir(module) {
                                     def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
                                     echo "Building Docker image for ${module} with tag ${imageTag}"
-                                    sh "docker build -t ${imageTag} ."
-                                    sh "docker push ${imageTag}"
+                                    def dockerBuildStatus = sh(script: "docker build -t ${imageTag} .", returnStatus: true)
+                                    if (dockerBuildStatus == 0) {
+                                        echo "Successfully built Docker image for ${module}."
+                                        sh "docker push ${imageTag}"
+                                    } else {
+                                        echo "Failed to build Docker image for ${module}. Check Docker logs."
+                                    }
                                 }
                             } else {
                                 echo "No branch specified for ${module}, skipping Docker build."
