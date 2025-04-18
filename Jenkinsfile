@@ -43,7 +43,6 @@ pipeline {
                     } 
                     else {
                         echo "No changes detected - stopping pipeline."
-                        currentBuild.result = 'ABORTED'
                         return
                     }
                 }
@@ -107,75 +106,75 @@ pipeline {
                 }
             }
         }
-        stage('Cleanup Old Docker Images') {
-            steps {
-                script {
-                    def modulesList = env.MODULES_CHANGED.split(',')
+        // stage('Cleanup Old Docker Images') {
+        //     steps {
+        //         script {
+        //             def modulesList = env.MODULES_CHANGED.split(',')
                     
-                    withCredentials([usernamePassword(
-                        credentialsId: 'docker-hub-credentials',
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_PASSWORD'
-                    )]) {
-                        // Get Docker Hub token for API calls
-                        def token = sh(
-                            script: """
-                            curl -s -H "Content-Type: application/json" \
-                            -X POST \
-                            -d '{"username": "${DOCKERHUB_USER}", "password": "${DOCKERHUB_PASSWORD}"}' \
-                            https://hub.docker.com/v2/users/login/ | jq -r .token
-                            """,
-                            returnStdout: true
-                        ).trim()
+        //             withCredentials([usernamePassword(
+        //                 credentialsId: 'docker-hub-credentials',
+        //                 usernameVariable: 'DOCKERHUB_USER',
+        //                 passwordVariable: 'DOCKERHUB_PASSWORD'
+        //             )]) {
+        //                 // Get Docker Hub token for API calls
+        //                 def token = sh(
+        //                     script: """
+        //                     curl -s -H "Content-Type: application/json" \
+        //                     -X POST \
+        //                     -d '{"username": "${DOCKERHUB_USER}", "password": "${DOCKERHUB_PASSWORD}"}' \
+        //                     https://hub.docker.com/v2/users/login/ | jq -r .token
+        //                     """,
+        //                     returnStdout: true
+        //                 ).trim()
                         
-                        modulesList.each { module ->
-                            echo "Checking image count for ${module}..."
+        //                 modulesList.each { module ->
+        //                     echo "Checking image count for ${module}..."
                             
-                            // Get list of tags and count them
-                            def tagsJson = sh(
-                                script: """
-                                curl -s -H "Authorization: JWT ${token}" \
-                                https://hub.docker.com/v2/repositories/${DOCKERHUB_USER}/${module}/tags?page_size=100
-                                """,
-                                returnStdout: true
-                            ).trim()
+        //                     // Get list of tags and count them
+        //                     def tagsJson = sh(
+        //                         script: """
+        //                         curl -s -H "Authorization: JWT ${token}" \
+        //                         https://hub.docker.com/v2/repositories/${DOCKERHUB_USER}/${module}/tags?page_size=100
+        //                         """,
+        //                         returnStdout: true
+        //                     ).trim()
                             
-                            // Parse JSON and get tag names
-                            def tags = sh(
-                                script: "echo '${tagsJson}' | jq -r '.results[].name'",
-                                returnStdout: true
-                            ).trim().split("\n")
+        //                     // Parse JSON and get tag names
+        //                     def tags = sh(
+        //                         script: "echo '${tagsJson}' | jq -r '.results[].name'",
+        //                         returnStdout: true
+        //                     ).trim().split("\n")
                             
-                            def tagCount = tags.size()
-                            echo "Found ${tagCount} tags for ${module}"
+        //                     def tagCount = tags.size()
+        //                     echo "Found ${tagCount} tags for ${module}"
                             
-                            // Only clean up if we have more than 5 tags
-                            if (tagCount > 5) {
-                                echo "More than 5 tags found, proceeding with cleanup..."
+        //                     // Only clean up if we have more than 5 tags
+        //                     if (tagCount > 5) {
+        //                         echo "More than 5 tags found, proceeding with cleanup..."
                                 
-                                // Sort tags (you might need a better sorting strategy depending on your tag format)
-                                def sortedTags = tags.sort()
-                                def tagsToKeep = 5
-                                def tagsToDelete = sortedTags[tagsToKeep..-1]
+        //                         // Sort tags (you might need a better sorting strategy depending on your tag format)
+        //                         def sortedTags = tags.sort()
+        //                         def tagsToKeep = 5
+        //                         def tagsToDelete = sortedTags[tagsToKeep..-1]
                                 
-                                echo "Keeping 5 most recent tags, deleting ${tagsToDelete.size()} older tags"
+        //                         echo "Keeping 5 most recent tags, deleting ${tagsToDelete.size()} older tags"
                                 
-                                tagsToDelete.each { tag ->
-                                    sh """
-                                    curl -s -H "Authorization: JWT ${token}" \
-                                    -X DELETE \
-                                    https://hub.docker.com/v2/repositories/${DOCKERHUB_USER}/${module}/tags/${tag}/
-                                    """
-                                    echo "Deleted ${DOCKERHUB_USER}/${module}:${tag}"
-                                }
-                            } else {
-                                echo "Only ${tagCount} tags found for ${module}, cleanup skipped"
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //                         tagsToDelete.each { tag ->
+        //                             sh """
+        //                             curl -s -H "Authorization: JWT ${token}" \
+        //                             -X DELETE \
+        //                             https://hub.docker.com/v2/repositories/${DOCKERHUB_USER}/${module}/tags/${tag}/
+        //                             """
+        //                             echo "Deleted ${DOCKERHUB_USER}/${module}:${tag}"
+        //                         }
+        //                     } else {
+        //                         echo "Only ${tagCount} tags found for ${module}, cleanup skipped"
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
         stage('Build & Push Docker Image') {
             steps {
                 script {
