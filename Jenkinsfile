@@ -5,14 +5,18 @@ pipeline {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
     }
 
+    parameters {
+        string(name: 'MODULES_TO_DEPLOY', defaultValue: '', description: 'Comma-separated list of services to deploy (e.g., vets-service,customers-service)')
+    }
+
     stages {
         stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
-        
-       stage('Detect Changes') {
+
+        stage('Detect Changes') {
             steps {
                 script {
                     // Fallback to initial commit if GIT_PREVIOUS_SUCCESSFUL_COMMIT is null
@@ -46,44 +50,6 @@ pipeline {
             }
         }
 
-
-
-        // stage('Test') {
-        //     steps {
-        //         script {
-        //             def modulesList = env.MODULES_CHANGED.split(',')
-
-        //             modulesList.each { module ->
-        //                 dir(module) {
-        //                     echo "Running tests for: ${module}"
-        //                     // Run JaCoCo agent during test phase
-        //                     sh "../mvnw clean verify -Pspringboot"
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     post {
-        //         always {
-        //             script {
-        //                 def modulesList = env.MODULES_CHANGED.split(',')
-
-        //                 modulesList.each { module ->
-        //                     dir(module) {
-        //                         echo "📊 Analyzing JaCoCo coverage for: ${module}"
-        //                         // Dùng jacoco plugin trong module tương ứng
-        //                         jacoco(
-        //                             execPattern: 'target/jacoco.exec',
-        //                             classPattern: 'target/classes',
-        //                             sourcePattern: 'src/main/java',
-        //                             exclusionPattern: 'src/test*'
-        //                         )
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
         stage('Build') {
             steps {
                 script {
@@ -109,6 +75,9 @@ pipeline {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     def modulesList = env.MODULES_CHANGED.split(',')
+                    
+                    // Add check for MODULES_TO_DEPLOY parameter
+                    def deployList = params.MODULES_TO_DEPLOY ? params.MODULES_TO_DEPLOY.split(',') : modulesList
 
                     withCredentials([usernamePassword(
                         credentialsId: 'docker-hub-credentials',
@@ -117,42 +86,41 @@ pipeline {
                     )]) {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
 
-                        
-                        modulesList.each { module ->
-                            dir(module) {
+                        deployList.each { module ->
+                            if (modulesList.contains(module)) {
                                 def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
-                                sh "docker build -t ${imageTag} ."
-                                sh "docker push ${imageTag}"
+                                echo "Building and pushing image for ${module} with tag ${imageTag}..."
+                                dir(module) {
+                                    sh "docker build -t ${imageTag} ."
+                                    sh "docker push ${imageTag}"
+                                }
+                            } else {
+                                def defaultImageTag = "${DOCKERHUB_USER}/${module}:latest"
+                                echo "Pushing default image for ${module} with tag ${defaultImageTag}..."
+                                dir(module) {
+                                    sh "docker push ${defaultImageTag}"
+                                }
                             }
-                        }// module
+                        }
                     }
-
                 }
             }
         }
 
-
+        // Optional stage to deploy to Kubernetes, if you need it
         // stage('Deploy to Kubernetes') {
         //     steps {
         //         script {
         //             def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
         //             def modulesList = env.MODULES_CHANGED.split(',')
-
-        //             modulesList.each { module ->
-        //                 echo " Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
-
-        //                 // Update image tag in deployment YAML
-        //                 sh """
-        //                 sed -i 's|image: ${DOCKER_HUB_USERNAME}/${module}:.*|image: ${DOCKER_HUB_USERNAME}/${module}:${COMMIT_ID}|' k8s/${module}/deployment.yaml
-        //                 """
-
-        //                 // Apply to Kubernetes
-        //                 sh "kubectl apply -f k8s/${module}/deployment.yaml"
+        
+        //             modulesList.each { module -> 
+        //                 echo "Deploying ${module} with image tag ${COMMIT_ID}"
+        //                 sh "kubectl set image deployment/${module} ${module}=${DOCKERHUB_USER}/${module}:${COMMIT_ID} --record"
         //             }
         //         }
         //     }
         // }
-
     }
 
     post {
