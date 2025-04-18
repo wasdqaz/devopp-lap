@@ -12,7 +12,7 @@ pipeline {
             }
         }
         
-       stage('Detect Changes') {
+        stage('Detect Changes') {
             steps {
                 script {
                     // Fallback to initial commit if GIT_PREVIOUS_SUCCESSFUL_COMMIT is null
@@ -45,8 +45,6 @@ pipeline {
                 }
             }
         }
-
-
 
         // stage('Test') {
         //     steps {
@@ -95,7 +93,7 @@ pipeline {
                     }
 
                     for (service in servicesList) {
-                        echo " Building ${service}..."
+                        echo "Building ${service}..."
                         dir(service) {
                             sh '../mvnw package -DskipTests'
                         }
@@ -117,20 +115,18 @@ pipeline {
                     )]) {
                         sh "docker login -u \${DOCKERHUB_USER} -p \${DOCKERHUB_PASSWORD}"
 
-                        
                         modulesList.each { module ->
                             dir(module) {
+                                // Sửa đổi tag image thành ${module}:${COMMIT_ID}
                                 def imageTag = "${DOCKERHUB_USER}/${module}:${COMMIT_ID}"
                                 sh "docker build -t ${imageTag} ."
                                 sh "docker push ${imageTag}"
                             }
-                        }// module
+                        } // module
                     }
-
                 }
             }
         }
-
 
         // stage('Deploy to Kubernetes') {
         //     steps {
@@ -139,7 +135,7 @@ pipeline {
         //             def modulesList = env.MODULES_CHANGED.split(',')
 
         //             modulesList.each { module ->
-        //                 echo " Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
+        //                 echo "Deploying ${module} to Kubernetes with image tag: ${COMMIT_ID}"
 
         //                 // Update image tag in deployment YAML
         //                 sh """
