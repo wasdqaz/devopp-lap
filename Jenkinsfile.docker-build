@@ -71,7 +71,7 @@ pipeline {
           withCredentials([usernamePassword(credentialsId: 'github-credentials',
             usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
             sh """
-              git clone https://${GIT_USER}:${GIT_PASS}@github.com/22127210/spring-petclinic-microservices-config.git config-repo
+              git clone https://${GIT_USER}:${GIT_PASS}@github.com/wasdqaz/spring-petclinic-microservices-config.git config-repo
             """
             dir("config-repo") {
               // Tạo folder cho feature nếu chưa có
