@@ -178,7 +178,7 @@ spec:
                 git push
               """
 
-            sh "mkdir -p environments/checkout-dev/checkout-dev-${svc}"
+            sh "mkdir -p environments/checkout-dev/checkout-dev-${branch}"
             writeFile file: "environments/checkout-dev/checkout-dev-${branch}/${svc}.yaml", text: """
 apiVersion: argoproj.io/v1alpha1
 kind: Application
