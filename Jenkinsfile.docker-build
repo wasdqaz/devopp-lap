@@ -65,7 +65,7 @@ pipeline {
         always {
             echo 'Pipeline execution completed'
             echo 'Cleanning'
-            sh "cleanWs()"
+            cleanWs()
             
         }
         success {
