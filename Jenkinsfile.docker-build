@@ -49,16 +49,16 @@ pipeline {
                                 // Set tên branch cho service
                                 env.FEATURE_NAME = targetBranch
                                 imageTag = "${imageName}:${commitId}"
-                            }
-                            // Checkout branch cụ thể và build service đó
-                            checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
-                            dir(module) {
-                                echo "Building service: ${module} from branch: ${targetBranch}"
-                                sh '../mvnw package -DskipTests'
-                                // Tag image với commit ID của HEAD sau khi build
-                                def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                                sh "docker build -t ${imageTag} ."
-                                sh "docker push ${imageTag}"
+                                // Checkout branch cụ thể và build service đó
+                                checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
+                                dir(module) {
+                                    echo "Building service: ${module} from branch: ${targetBranch}"
+                                    sh '../mvnw package -DskipTests'
+                                    // Tag image với commit ID của HEAD sau khi build
+                                    def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                                    sh "docker build -t ${imageTag} ."
+                                    sh "docker push ${imageTag}"
+                                }
                             }
                             
 
