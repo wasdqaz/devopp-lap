@@ -1,3 +1,6 @@
+def FEATURE_NAME
+def SERVICE_NAME
+def IMAGE_TAG
 pipeline {
     agent any
 
@@ -41,13 +44,13 @@ pipeline {
 
                             if (targetBranch != "main"){
                                 // Tag image với commit ID của HEAD
-                                env.IMAGE_TAG = commitId
+                                IMAGE_TAG = commitId
 
                                 // Set các biến môi trường cho service
-                                env.SERVICE_NAME = module
+                                SERVICE_NAME = module
 
                                 // Set tên branch cho service
-                                env.FEATURE_NAME = targetBranch
+                                FEATURE_NAME = targetBranch
                                 imageTag = "${imageName}:${commitId}"
                             checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
                               dir(module) {
@@ -73,9 +76,9 @@ pipeline {
     stage('Generate GitOps Files') {
       steps {
         script {
-          def feature = params.FEATURE_NAME
-          def svc = params.SERVICE_NAME
-          def commitId = env.IMAGE_TAG
+          def feature = FEATURE_NAME
+          def svc = SERVICE_NAME
+          def commitId = IMAGE_TAG
 
           sh "rm -rf config-repo"
           withCredentials([usernamePassword(credentialsId: 'github-credentials',
