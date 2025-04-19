@@ -59,7 +59,83 @@ pipeline {
                 }
             }
         }
-    }
+        
+    stage('Generate GitOps Files') {
+      steps {
+        script {
+          def feature = params.FEATURE_NAME
+          def svc = params.SERVICE_NAME
+          def commitId = env.IMAGE_TAG
+
+          sh "rm -rf config-repo"
+          withCredentials([usernamePassword(credentialsId: 'github-credentials',
+            usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+            sh """
+              git clone https://${GIT_USER}:${GIT_PASS}@github.com/22127210/spring-petclinic-microservices-config.git config-repo
+            """
+            dir("config-repo") {
+              // Tạo folder cho feature nếu chưa có
+              sh "mkdir -p values/checkout_dev/${feature}"
+
+              // Ghi file Helm values override
+              writeFile file: "values/checkout_dev/${feature}/values-${svc}.yaml", text: """
+image:
+  repository: 22127210/spring-petclinic-${svc}
+  tag: "${commitId}"
+  pullPolicy: IfNotPresent
+
+replicas: 1
+
+service:
+  port: 8080
+  type: ClusterIP
+
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: docker
+  - name: CONFIG_SERVER_URL
+    value: http://config-server.petclinic-core.svc.cluster.local:8888
+  - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+    value: http://discovery-server.petclinic-core.svc.cluster.local:8761/eureka
+"""
+
+              // Optionally, generate ingress for this checkout_dev
+              sh "mkdir -p ingress/checkout_dev"
+              writeFile file: "ingress/checkout_dev/${feature}-ingress.yaml", text: """
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${feature}-ingress
+  namespace: checkout_dev-${feature}
+spec:
+  rules:
+    - host: ${feature}.petclinic.local
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: ${svc}
+                port:
+                  number: 8080
+"""
+
+              // Commit & push
+              sh """
+                git config user.name "jenkins"
+                git config user.email "jenkins@company.com"
+                git add .
+                git commit -m "[checkout_dev] ${feature}: ${svc} -> ${commitId}"
+                git push
+              """
+            }
+          }
+        }
+      }
+    }// end of stage Generate GitOps Files
+
+    }// end of stages
 
     post {
         always {
