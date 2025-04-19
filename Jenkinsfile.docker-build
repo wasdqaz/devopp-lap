@@ -94,7 +94,7 @@ pipeline {
               // Ghi file Helm values override
               writeFile file: "values/checkout_dev/${feature}/values-${svc}.yaml", text: """
 image:
-  repository: 22127210/spring-petclinic-${svc}
+  repository: 22127210/${svc}
   tag: "${commitId}"
   pullPolicy: IfNotPresent
 
