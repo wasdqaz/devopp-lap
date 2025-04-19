@@ -89,10 +89,10 @@ pipeline {
             """
             dir("config-repo") {
               // Tạo folder cho feature nếu chưa có
-              sh "mkdir -p values/checkout_dev/${feature}"
+              sh "mkdir -p values/checkout-dev/${feature}"
 
               // Ghi file Helm values override
-              writeFile file: "values/checkout_dev/${feature}/values-${svc}.yaml", text: """
+              writeFile file: "values/checkout-dev/${feature}/values-${svc}.yaml", text: """
 image:
   repository: 22127210/${svc}
   tag: "${commitId}"
@@ -113,14 +113,14 @@ env:
     value: http://discovery-server.petclinic-core.svc.cluster.local:8761/eureka
 """
 
-              // Optionally, generate ingress for this checkout_dev
-              sh "mkdir -p ingress/checkout_dev"
-              writeFile file: "ingress/checkout_dev/${feature}-ingress.yaml", text: """
+              // Optionally, generate ingress for this checkout-dev
+              sh "mkdir -p ingress/checkout-dev"
+              writeFile file: "ingress/checkout-dev/${feature}-ingress.yaml", text: """
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ${feature}-ingress
-  namespace: checkout_dev-${feature}
+  namespace: checkout-dev-${feature}
 spec:
   rules:
     - host: ${feature}.petclinic.local
@@ -140,7 +140,7 @@ spec:
                 git config user.name "jenkins"
                 git config user.email "jenkins@company.com"
                 git add .
-                git commit -m "[checkout_dev] ${feature}: ${svc} -> ${commitId}"
+                git commit -m "[checkout-dev] ${feature}: ${svc} -> ${commitId}"
                 git push
               """
             }
