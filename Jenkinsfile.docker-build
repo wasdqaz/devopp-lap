@@ -40,6 +40,14 @@ pipeline {
                             echo "Building service: ${module} from branch: ${targetBranch}"
 
                             if (targetBranch != "main"){
+                                // Tag image với commit ID của HEAD
+                                env.IMAGE_TAG = commitId
+
+                                // Set các biến môi trường cho service
+                                env.SERVICE_NAME = module
+
+                                // Set tên branch cho service
+                                env.FEATURE_NAME = targetBranch
                                 imageTag = "${imageName}:${commitId}"
                             }
                             // Checkout branch cụ thể và build service đó
