@@ -1,3 +1,4 @@
+def MODULES_CHANGED = ""
 pipeline {
     agent any
 
@@ -5,6 +6,9 @@ pipeline {
         DEFAULT_MODULES = "spring-petclinic-admin-server,spring-petclinic-api-gateway,spring-petclinic-config-server,spring-petclinic-customers-service,spring-petclinic-discovery-server,spring-petclinic-genai-service,spring-petclinic-vets-service,spring-petclinic-visits-service"
     }
 
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10', daysToKeepStr: '7'))
+    }
     stages {
         stage('Checkout SCM') {
             steps {
@@ -35,11 +39,11 @@ pipeline {
                             .findAll { it } // Lọc bỏ giá trị rỗng
                             .join(',')
         
-                        env.MODULES_CHANGED = changedModules
+                        MODULES_CHANGED = changedModules
                         echo "Modules to process: ${env.MODULES_CHANGED}"
-                    } else {
+                    } 
+                    else {
                         echo "No changes detected - stopping pipeline."
-                        currentBuild.result = 'ABORTED'
                         return
                     }
                 }
@@ -103,13 +107,84 @@ pipeline {
                 }
             }
         }
-
-        stage('Build & Push Docker Image (CLI)') {
+        // stage('Cleanup Old Docker Images') {
+        //     steps {
+        //         script {
+        //             def modulesList = env.MODULES_CHANGED.split(',')
+                    
+        //             withCredentials([usernamePassword(
+        //                 credentialsId: 'docker-hub-credentials',
+        //                 usernameVariable: 'DOCKERHUB_USER',
+        //                 passwordVariable: 'DOCKERHUB_PASSWORD'
+        //             )]) {
+        //                 // Get Docker Hub token for API calls
+        //                 def token = sh(
+        //                     script: """
+        //                     curl -s -H "Content-Type: application/json" \
+        //                     -X POST \
+        //                     -d '{"username": "${DOCKERHUB_USER}", "password": "${DOCKERHUB_PASSWORD}"}' \
+        //                     https://hub.docker.com/v2/users/login/ | jq -r .token
+        //                     """,
+        //                     returnStdout: true
+        //                 ).trim()
+                        
+        //                 modulesList.each { module ->
+        //                     echo "Checking image count for ${module}..."
+                            
+        //                     // Get list of tags and count them
+        //                     def tagsJson = sh(
+        //                         script: """
+        //                         curl -s -H "Authorization: JWT ${token}" \
+        //                         https://hub.docker.com/v2/repositories/${DOCKERHUB_USER}/${module}/tags?page_size=100
+        //                         """,
+        //                         returnStdout: true
+        //                     ).trim()
+                            
+        //                     // Parse JSON and get tag names
+        //                     def tags = sh(
+        //                         script: "echo '${tagsJson}' | jq -r '.results[].name'",
+        //                         returnStdout: true
+        //                     ).trim().split("\n")
+                            
+        //                     def tagCount = tags.size()
+        //                     echo "Found ${tagCount} tags for ${module}"
+                            
+        //                     // Only clean up if we have more than 5 tags
+        //                     if (tagCount > 5) {
+        //                         echo "More than 5 tags found, proceeding with cleanup..."
+                                
+        //                         // Sort tags (you might need a better sorting strategy depending on your tag format)
+        //                         def sortedTags = tags.sort()
+        //                         def tagsToKeep = 5
+        //                         def tagsToDelete = sortedTags[tagsToKeep..-1]
+                                
+        //                         echo "Keeping 5 most recent tags, deleting ${tagsToDelete.size()} older tags"
+                                
+        //                         tagsToDelete.each { tag ->
+        //                             sh """
+        //                             curl -s -H "Authorization: JWT ${token}" \
+        //                             -X DELETE \
+        //                             https://hub.docker.com/v2/repositories/${DOCKERHUB_USER}/${module}/tags/${tag}/
+        //                             """
+        //                             echo "Deleted ${DOCKERHUB_USER}/${module}:${tag}"
+        //                         }
+        //                     } else {
+        //                         echo "Only ${tagCount} tags found for ${module}, cleanup skipped"
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        stage('Build & Push Docker Image') {
             steps {
                 script {
                     def COMMIT_ID = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    def modulesList = env.MODULES_CHANGED.split(',')
-
+                    def modulesList = MODULES_CHANGED.tokenize(',')
+                    if (modulesList.isEmpty()) {
+                        echo "No changed services found. Skipping build."
+                        return
+                    }
                     withCredentials([usernamePassword(
                         credentialsId: 'docker-hub-credentials',
                         usernameVariable: 'DOCKERHUB_USER',
@@ -130,7 +205,75 @@ pipeline {
                 }
             }
         }
-
+        stage('Update Config Repository') {
+            steps {
+                script {
+                    def servicesList = MODULES_CHANGED.tokenize(',')
+                    if (servicesList.isEmpty()) {
+                        echo "No changed services found. Skipping GitOps update."
+                        return
+                    }
+                    def commitHash = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    
+                    // Create a temporary directory for the GitOps repo
+                    sh "rm -rf spring-petclinic-microservices-config || true"
+                    
+                    // Use credentials for Git operations
+                    withCredentials([usernamePassword(
+                        credentialsId: 'github-credentials', 
+                        usernameVariable: 'GIT_USERNAME', 
+                        passwordVariable: 'GIT_PASSWORD'
+                    )]) {
+                        // Clone with credentials
+                        
+                        sh """
+                        echo "Cloning GitOps repository..."
+                        echo "https://\${GIT_USERNAME}:\${GIT_PASSWORD}@github.com/wasdqaz/spring-petclinic-microservices-config.git"
+                        git clone https://\${GIT_USERNAME}:\${GIT_PASSWORD}@github.com/wasdqaz/spring-petclinic-microservices-config.git
+                        """
+                        
+                        dir('spring-petclinic-microservices-config') {
+                            
+                            // Update image tags for each changed service
+                            for (service in servicesList) {
+                                def shortServiceName = service.replaceFirst("spring-petclinic-", "")
+                                def valuesFile = "values/dev/values-${shortServiceName}.yaml"
+                                
+                                // Check if file exists and update with sed
+                                sh """
+                                if [ -f "${valuesFile}" ]; then
+                                    echo "Updating image tag in ${valuesFile}"
+                                    sed -i 's/\\(tag:\\s*\\).*/\\1"'${commitHash}'"/' ${valuesFile}
+                                else
+                                    echo "Warning: ${valuesFile} not found"
+                                fi
+                                """
+                            }
+                            
+                            // Configure Git and commit changes
+                            sh """
+                            git config user.email "jenkins@example.com"
+                            git config user.name "Jenkins CI"
+                            git status
+                            
+                            # Only commit if there are changes
+                            if ! git diff --quiet; then
+                                git add .
+                                git commit -m "Update image tags for ${MODULES_CHANGED} to ${commitHash}"
+                                git push
+                                echo "✅ Successfully updated GitOps repository"
+                            else
+                                echo "ℹ️ No changes to commit in GitOps repository"
+                            fi
+                            """
+                        }
+                    }
+                    
+                    // Clean up after ourselves
+                    sh "rm -rf spring-petclinic-microservices-config || true"
+                }
+            }
+        }
 
         // stage('Deploy to Kubernetes') {
         //     steps {
@@ -158,6 +301,9 @@ pipeline {
     post {
         always {
             echo 'Pipeline execution completed'
+            echo 'Module: ${MODULES_CHANGED}'
+            echo 'Clean up work space'    
+            cleanWs()
         }
         success {
             echo 'Pipeline finished successfully'
