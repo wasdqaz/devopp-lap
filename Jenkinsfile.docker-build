@@ -52,17 +52,18 @@ pipeline {
                                 // Set tên branch cho service
                                 FEATURE_NAME = targetBranch
                                 imageTag = "${imageName}:${commitId}"
+                            }
                             checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
                               dir(module) {
                                   echo "Building service: ${module} from branch: ${targetBranch}"
                                   sh '../mvnw package -DskipTests'
                                   // Tag image với commit ID của HEAD sau khi build
-                                  def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                                  sh "docker build -t ${imageTag} ."
-                                  sh "docker push ${imageTag}"
+                                  if (targetBranch == "main"){
+                                    def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                                    sh "docker build -t ${imageTag} ."
+                                    sh "docker push ${imageTag}"
+                                  }
                               }
-                            }
-                            checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
 
                             // Checkout branch cụ thể và build service đó
                             
