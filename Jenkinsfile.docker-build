@@ -1,6 +1,18 @@
-def FEATURE_NAME
+def BRANCH_NAME
 def SERVICE_NAME
 def IMAGE_TAG
+def PORT = [
+    "spring-petclinic-config-server" = 8888,
+    "spring-petclinic-discovery-server" = 8761,
+    "spring-petclinic-api-gateway" = 8080,
+    "spring-petclinic-admin-server" = 9090,
+    "spring-petclinic-genai-service" = 8084,
+    "spring-petclinic-vets-service" = 8083,
+    "spring-petclinic-customers-service" = 8081,
+    "spring-petclinic-visits-service" = 8082
+
+]
+
 pipeline {
     agent any
 
@@ -50,7 +62,7 @@ pipeline {
                                 SERVICE_NAME = module
 
                                 // Set tên branch cho service
-                                FEATURE_NAME = targetBranch
+                                BRANCH_NAME = targetBranch
                                 imageTag = "${imageName}:${commitId}"
                             }
                             checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
@@ -77,10 +89,10 @@ pipeline {
     stage('Generate GitOps Files') {
       steps {
         script {
-          def feature = FEATURE_NAME
+          def branch = BRANCH_NAME
           def svc = SERVICE_NAME
           def commitId = IMAGE_TAG
-
+          def port = PORT[svc]
           sh "rm -rf config-repo"
           withCredentials([usernamePassword(credentialsId: 'github-credentials',
             usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
@@ -88,11 +100,11 @@ pipeline {
               git clone https://${GIT_USER}:${GIT_PASS}@github.com/wasdqaz/spring-petclinic-microservices-config.git config-repo
             """
             dir("config-repo") {
-              // Tạo folder cho feature nếu chưa có
-              sh "mkdir -p values/checkout-dev/${feature}"
+              // Tạo folder cho branch nếu chưa có
+              sh "mkdir -p values/checkout-dev/${branch}"
 
               // Ghi file Helm values override
-              writeFile file: "values/checkout-dev/${feature}/values-${svc}.yaml", text: """
+              writeFile file: "values/checkout-dev/${branch}/values-${svc}.yaml", text: """
 image:
   repository: 22127210/${svc}
   tag: "${commitId}"
@@ -101,8 +113,10 @@ image:
 replicas: 1
 
 service:
-  port: 8080
+  port: 9090
   type: ClusterIP
+  name: ${svc}
+
 
 env:
   - name: SPRING_PROFILES_ACTIVE
@@ -111,19 +125,39 @@ env:
     value: http://config-server.petclinic-core.svc.cluster.local:8888
   - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
     value: http://discovery-server.petclinic-core.svc.cluster.local:8761/eureka
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+
+readinessProbe:
+  path: /actuator/health
+  port: ${port}
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+livenessProbe:
+  path: /actuator/health
+  port: ${port}
+  initialDelaySeconds: 60
+  periodSeconds: 15
+
 """
 
               // Optionally, generate ingress for this checkout-dev
               sh "mkdir -p ingress/checkout-dev"
-              writeFile file: "ingress/checkout-dev/${feature}-ingress.yaml", text: """
+              writeFile file: "ingress/checkout-dev/${branch}-ingress.yaml", text: """
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ${feature}-ingress
-  namespace: checkout-dev-${feature}
+  name: ${branch}-ingress
+  namespace: checkout-dev-${branch}
 spec:
   rules:
-    - host: ${feature}.petclinic.local
+    - host: ${branch}.petclinic.local
       http:
         paths:
           - pathType: Prefix
@@ -132,7 +166,7 @@ spec:
               service:
                 name: ${svc}
                 port:
-                  number: 8080
+                  number: ${port}
 """
 
               // Commit & push
@@ -140,13 +174,48 @@ spec:
                 git config user.name "jenkins"
                 git config user.email "jenkins@company.com"
                 git add .
-                git commit -m "[checkout-dev] ${feature}: ${svc} -> ${commitId}"
+                git commit -m "[checkout-dev] ${branch}: ${svc} -> ${commitId}"
                 git push
               """
+
+            sh "mkdir -p environments/checkout-dev/checkout-dev-${svc}"
+            writeFile file: "environments/checkout-dev/checkout-dev-${branch}/${svc}.yaml", text: """
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${svc}
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    environment: checkout-dev
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/wasdqaz/spring-petclinic-microservices-config.git
+    path: charts/spring-petclinic-chart
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+        - ../../values/dev/values-admin-server.yaml
+      releaseName: {svc}-${branch}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: checkout-dev-${branch}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true            
+            """
             }
           }
         }
-      }
+      }// end of script
     }// end of stage Generate GitOps Files
 
     }// end of stages
