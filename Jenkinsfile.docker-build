@@ -168,18 +168,8 @@ spec:
                 port:
                   number: ${port}
 """
-
-              // Commit & push
-              sh """
-                git config user.name "jenkins"
-                git config user.email "jenkins@company.com"
-                git add .
-                git commit -m "[checkout-dev] ${branch}: ${svc} -> ${commitId}"
-                git push
-              """
-
-            sh "mkdir -p environments/checkout-dev/checkout-dev-${branch}"
-            writeFile file: "environments/checkout-dev/checkout-dev-${branch}/${svc}.yaml", text: """
+              sh "mkdir -p environments/checkout-dev/checkout-dev-${branch}"
+              writeFile file: "environments/checkout-dev/checkout-dev-${branch}/${svc}.yaml", text: """
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -212,6 +202,16 @@ spec:
       - PruneLast=true
       - ApplyOutOfSyncOnly=true            
             """
+
+              // Commit & push
+              sh """
+                git config user.name "jenkins"
+                git config user.email "jenkins@company.com"
+                git add .
+                git commit -m "[checkout-dev] ${branch}: ${svc} -> ${commitId}"
+                git push
+              """
+
             }
           }
         }
