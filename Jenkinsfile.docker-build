@@ -168,8 +168,8 @@ spec:
                 port:
                   number: ${port}
 """
-              sh "mkdir -p environments/checkout-dev/checkout-dev-${branch}"
-              writeFile file: "environments/checkout-dev/checkout-dev-${branch}/${svc}.yaml", text: """
+              sh "mkdir -p environment/checkout-dev/checkout-dev-${branch}"
+              writeFile file: "environment/checkout-dev/checkout-dev-${branch}/${svc}.yaml", text: """
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
