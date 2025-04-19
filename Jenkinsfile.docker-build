@@ -2,14 +2,14 @@ def BRANCH_NAME
 def SERVICE_NAME
 def IMAGE_TAG
 def PORT = [
-    "spring-petclinic-config-server" = 8888,
-    "spring-petclinic-discovery-server" = 8761,
-    "spring-petclinic-api-gateway" = 8080,
-    "spring-petclinic-admin-server" = 9090,
-    "spring-petclinic-genai-service" = 8084,
-    "spring-petclinic-vets-service" = 8083,
-    "spring-petclinic-customers-service" = 8081,
-    "spring-petclinic-visits-service" = 8082
+    "spring-petclinic-config-server" : 8888,
+    "spring-petclinic-discovery-server" : 8761,
+    "spring-petclinic-api-gateway" : 8080,
+    "spring-petclinic-admin-server" : 9090,
+    "spring-petclinic-genai-service" : 8084,
+    "spring-petclinic-vets-service" : 8083,
+    "spring-petclinic-customers-service" : 8081,
+    "spring-petclinic-visits-service" : 8082
 
 ]
 
