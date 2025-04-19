@@ -36,36 +36,24 @@ pipeline {
                             def targetBranch = params."${module}"?.trim()
                             echo "Parameter '${module}': ${targetBranch}"
                             def imageName = "${DOCKERHUB_USER}/${module}"
-                            def imageTag
-        
-                            if (targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()) {
-                                echo "Condition 'targetBranch && targetBranch != 'main' && !targetBranch.isEmpty()' is true. targetBranch: '${targetBranch}'"
-                                // Checkout branch cụ thể và build service đó
-                                checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
-                                dir(module) {
-                                    echo "Building service: ${module} from branch: ${targetBranch}"
-                                    sh '../mvnw package -DskipTests'
-                                    // Tag image với commit ID của HEAD sau khi build
-                                    def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                                    imageTag = "${imageName}:${builtCommitId}"
-                                    sh "docker build -t ${imageTag} ."
-                                    sh "docker push ${imageTag}"
-                                }
-                            } else {
-                                imageTag = "${imageName}:latest"
-                                echo "Kiểm tra image cục bộ: ${imageTag}"
-                                def checkImageCommand = "docker images -q ${imageTag}"
-                                def imageId = sh(script: checkImageCommand, returnStdout: true).trim()
-                                def imageExists = !imageId.isEmpty()
-                                echo "Image ID: ${imageId}"
-                                echo "Image exists: ${imageExists}"
-                                dir(module) {
-                                    sh '../mvnw package -DskipTests'
-                                    sh "docker build -t ${imageTag} ."
-                                }
-                                echo "Pushing image: ${imageTag}"
+                            def imageTag = "${imageName}:latest"
+                            echo "Building service: ${module} from branch: ${targetBranch}"
+
+                            if (targetBranch != "main"){
+                                imageTag = "${imageName}:${commitId}"
+                            }
+                            // Checkout branch cụ thể và build service đó
+                            checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
+                            dir(module) {
+                                echo "Building service: ${module} from branch: ${targetBranch}"
+                                sh '../mvnw package -DskipTests'
+                                // Tag image với commit ID của HEAD sau khi build
+                                def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                                sh "docker build -t ${imageTag} ."
                                 sh "docker push ${imageTag}"
                             }
+                            
+
                         }
                     }
                 }
@@ -76,6 +64,9 @@ pipeline {
     post {
         always {
             echo 'Pipeline execution completed'
+            echo 'Cleanning'
+            sh "cleanWs()"
+            
         }
         success {
             echo 'Pipeline finished successfully'
