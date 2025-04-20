@@ -42,6 +42,14 @@ pipeline {
                                 checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
                                 def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                                 imageTag = "${imageName}:${commitId}"
+                                // Tag image với commit ID của HEAD
+                                //IMAGE_TAG = commitId
+
+                                // Set các biến môi trường cho service
+                                //SERVICE_NAME = module
+
+                                // Set tên branch cho service
+                                //BRANCH_NAME = targetBranch
                             }
                             dir(module) {
                                 echo "Building service: ${module} from branch: ${targetBranch}"
