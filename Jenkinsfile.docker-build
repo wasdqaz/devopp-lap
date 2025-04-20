@@ -12,7 +12,16 @@ def PORT = [
     "spring-petclinic-visits-service" : 8082
 
 ]
-
+def SERVICE_MAP = [
+    "spring-petclinic-config-server" : "config-server",
+    "spring-petclinic-discovery-server" : "discovery-server",
+    "spring-petclinic-api-gateway" : "api-gateway",
+    "spring-petclinic-admin-server" : "admin-server",
+    "spring-petclinic-genai-service" : "genai-service",
+    "spring-petclinic-vets-service" : "vets-service",
+    "spring-petclinic-customers-service" : "customers-service",
+    "spring-petclinic-visits-service" : "visits-service"
+]
 pipeline {
     agent any
 
@@ -21,14 +30,14 @@ pipeline {
     }
 
     parameters {
-        string(name: 'admin-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-admin-server')
-        string(name: 'api-gateway', defaultValue: 'main', description: 'Branch to build for spring-petclinic-api-gateway')
-        string(name: 'config-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-config-server')
-        string(name: 'customers-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-customers-service')
-        string(name: 'discovery-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-discovery-server')
-        string(name: 'genai-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-genai-service')
-        string(name: 'vets-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-vets-service')
-        string(name: 'visits-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-visits-service')
+        string(name: 'spring-petclinic-admin-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-admin-server')
+        string(name: 'spring-petclinic-api-gateway', defaultValue: 'main', description: 'Branch to build for spring-petclinic-api-gateway')
+        string(name: 'spring-petclinic-config-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-config-server')
+        string(name: 'spring-petclinic-customers-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-customers-service')
+        string(name: 'spring-petclinic-discovery-server', defaultValue: 'main', description: 'Branch to build for spring-petclinic-discovery-server')
+        string(name: 'spring-petclinic-genai-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-genai-service')
+        string(name: 'spring-petclinic-vets-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-vets-service')
+        string(name: 'spring-petclinic-visits-service', defaultValue: 'main', description: 'Branch to build for spring-petclinic-visits-service')
         // Thêm các parameter cho module khác nếu có trong DEFAULT_MODULES
     }
 
@@ -112,7 +121,7 @@ pipeline {
             def port = PORT[svc]
             def imgTag = (svc == SERVICE_NAME) ? commitId : "latest"  // Only update latest commit for the one built
 
-            writeFile file: "values/checkout-dev/checkout-dev-${branch}/values-${svc}.yaml", text: """
+            writeFile file: "values/checkout-dev/checkout-dev-${branch}/values-${SERVICE_MAP[svc]}.yaml", text: """
 image:
   repository: 22127210/${svc}
   tag: "${imgTag}"
