@@ -138,9 +138,9 @@ env:
   - name: SPRING_PROFILES_ACTIVE
     value: docker
   - name: CONFIG_SERVER_URL
-    value: http://config-server.petclinic-core.svc.cluster.local:8888
+    value: http://config-server:8888
   - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-    value: http://discovery-server.petclinic-core.svc.cluster.local:8761/eureka
+    value: http://discovery-server:8761/eureka
 
 resources:
   limits:
