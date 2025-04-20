@@ -27,8 +27,6 @@ pipeline {
         stage('Build and Push Docker Image') {
             steps {
                 script {
-                    def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-        
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                         sh "docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASSWORD}"
         
@@ -39,21 +37,18 @@ pipeline {
                             def imageTag = "${imageName}:latest"
                             echo "Building service: ${module} from branch: ${targetBranch}"
 
+                            // Checkout branch cụ thể và build service đó
                             if (targetBranch != "main"){
+                                checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
+                                def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                                 imageTag = "${imageName}:${commitId}"
                             }
-                            // Checkout branch cụ thể và build service đó
-                            checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
                             dir(module) {
                                 echo "Building service: ${module} from branch: ${targetBranch}"
                                 sh '../mvnw package -DskipTests'
-                                // Tag image với commit ID của HEAD sau khi build
-                                def builtCommitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                                 sh "docker build -t ${imageTag} ."
                                 sh "docker push ${imageTag}"
                             }
-                            
-
                         }
                     }
                 }
