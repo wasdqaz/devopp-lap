@@ -1,4 +1,4 @@
-def BRANCH_NAME
+def BRANCH_NAME = "main"
 def SERVICE_NAME
 def IMAGE_TAG
 def PORT = [
