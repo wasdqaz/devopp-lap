@@ -86,37 +86,44 @@ pipeline {
             }
         }
         
-    stage('Generate GitOps Files') {
-      steps {
-        script {
-          def branch = BRANCH_NAME
-          def svc = SERVICE_NAME
-          def commitId = IMAGE_TAG
-          def port = PORT[svc]
-          sh "rm -rf config-repo"
-          withCredentials([usernamePassword(credentialsId: 'github-credentials',
-            usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-            sh """
-              git clone https://${GIT_USER}:${GIT_PASS}@github.com/wasdqaz/spring-petclinic-microservices-config.git config-repo
-            """
-            dir("config-repo") {
-              // Tạo folder cho branch nếu chưa có
-              sh "mkdir -p values/checkout-dev/${branch}"
+   stage('Create check out env') {
+  steps {
+    script {
+      def branch = BRANCH_NAME
+      def commitId = IMAGE_TAG
 
-              // Ghi file Helm values override
-              writeFile file: "values/checkout-dev/${branch}/values-${svc}.yaml", text: """
+      // Clean up workspace clone first
+      sh "rm -rf config-repo"
+
+      withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+        sh """
+          git clone https://${GIT_USER}:${GIT_PASS}@github.com/wasdqaz/spring-petclinic-microservices-config.git config-repo
+        """
+        
+        dir("config-repo") {
+          // Create required folders
+          sh "mkdir -p values/checkout-dev/${branch}"
+          sh "mkdir -p ingress/checkout-dev"
+          sh "mkdir -p environment/checkout-dev/checkout-dev-${branch}"
+
+          def services = env.DEFAULT_MODULES.tokenize(',')
+
+          services.each { svc ->
+            def port = PORT[svc]
+            def imgTag = (svc == SERVICE_NAME) ? commitId : "latest"  // Only update latest commit for the one built
+
+            writeFile file: "values/checkout-dev/${branch}/values-${svc}.yaml", text: """
 image:
   repository: 22127210/${svc}
-  tag: "${commitId}"
+  tag: "${imgTag}"
   pullPolicy: IfNotPresent
 
 replicas: 1
 
 service:
-  port: 9090
+  port: ${port}
   type: ClusterIP
   name: ${svc}
-
 
 env:
   - name: SPRING_PROFILES_ACTIVE
@@ -125,6 +132,7 @@ env:
     value: http://config-server.petclinic-core.svc.cluster.local:8888
   - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
     value: http://discovery-server.petclinic-core.svc.cluster.local:8761/eureka
+
 resources:
   limits:
     cpu: "500m"
@@ -144,12 +152,10 @@ livenessProbe:
   port: ${port}
   initialDelaySeconds: 60
   periodSeconds: 15
-
 """
 
-              // Optionally, generate ingress for this checkout-dev
-              sh "mkdir -p ingress/checkout-dev"
-              writeFile file: "ingress/checkout-dev/${branch}-ingress.yaml", text: """
+            // One shared ingress file (optional — adjust if needed)
+            writeFile file: "ingress/checkout-dev/${branch}-ingress.yaml", text: """
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -168,8 +174,9 @@ spec:
                 port:
                   number: ${port}
 """
-              sh "mkdir -p environment/checkout-dev/checkout-dev-${branch}"
-              writeFile file: "environment/checkout-dev/checkout-dev-${branch}/${svc}.yaml", text: """
+
+            // One Application file per service
+            writeFile file: "environment/checkout-dev/checkout-dev-${branch}/${svc}.yaml", text: """
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -187,8 +194,8 @@ spec:
     targetRevision: HEAD
     helm:
       valueFiles:
-        - ../../values/dev/values-admin-server.yaml
-      releaseName: {svc}-${branch}
+        - ../../values/checkout-dev/${branch}/values-${svc}.yaml
+      releaseName: ${svc}-${branch}
   destination:
     server: https://kubernetes.default.svc
     namespace: checkout-dev-${branch}
@@ -200,23 +207,23 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - PruneLast=true
-      - ApplyOutOfSyncOnly=true            
-            """
+      - ApplyOutOfSyncOnly=true
+"""
+          } // end of service loop
 
-              // Commit & push
-              sh """
-                git config user.name "jenkins"
-                git config user.email "jenkins@company.com"
-                git add .
-                git commit -m "[checkout-dev] ${branch}: ${svc} -> ${commitId}"
-                git push
-              """
-
-            }
-          }
+          // Commit all files
+          sh """
+            git config user.name "jenkins"
+            git config user.email "jenkins@company.com"
+            git add .
+            git commit -m "[checkout-dev] ${branch}: all services -> ${commitId}"
+            git push
+          """
         }
-      }// end of script
-    }// end of stage Generate GitOps Files
+      }
+    }
+  }
+}
 
     }// end of stages
 
