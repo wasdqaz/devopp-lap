@@ -75,7 +75,8 @@ pipeline {
                                 imageTag = "${imageName}:${commitId}"
                             }
                             checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
-                              dir(module) {
+                            sh "git status"
+                                dir(module) {
                                   // Tag image với commit ID của HEAD sau khi build
                                   if (targetBranch != "main"){
                                     echo "Building service: ${module} from branch: ${targetBranch}"
