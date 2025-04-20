@@ -102,7 +102,7 @@ pipeline {
         
         dir("config-repo") {
           // Create required folders
-          sh "mkdir -p values/checkout-dev/${branch}"
+          sh "mkdir -p values/checkout-dev/checkout-dev-${branch}"
           sh "mkdir -p ingress/checkout-dev"
           sh "mkdir -p environment/checkout-dev/checkout-dev-${branch}"
 
@@ -112,7 +112,7 @@ pipeline {
             def port = PORT[svc]
             def imgTag = (svc == SERVICE_NAME) ? commitId : "latest"  // Only update latest commit for the one built
 
-            writeFile file: "values/checkout-dev/${branch}/values-${svc}.yaml", text: """
+            writeFile file: "values/checkout-dev/checkout-dev-${branch}/values-${svc}.yaml", text: """
 image:
   repository: 22127210/${svc}
   tag: "${imgTag}"
