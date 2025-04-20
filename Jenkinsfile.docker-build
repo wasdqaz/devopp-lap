@@ -206,7 +206,7 @@ spec:
     helm:
       valueFiles:
         - ../../values/checkout-dev/${branch}/values-${svc}.yaml
-      releaseName: ${svc}-${branch}
+      releaseName: ${SERVICE_MAP[svc]}
   destination:
     server: https://kubernetes.default.svc
     namespace: checkout-dev-${branch}
