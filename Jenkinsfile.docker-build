@@ -132,7 +132,7 @@ replicas: 1
 service:
   port: ${port}
   type: ClusterIP
-  name: ${svc}
+  name: ${SERVICE_MAP[svc]}
 
 env:
   - name: SPRING_PROFILES_ACTIVE
