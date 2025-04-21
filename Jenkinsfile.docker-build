@@ -38,8 +38,8 @@ pipeline {
                             echo "Building service: ${module} from branch: ${targetBranch}"
 
                             // Checkout branch cụ thể và build service đó
+                            checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
                             if (targetBranch != "main"){
-                                checkout([$class: 'GitSCM', branches: [[name: targetBranch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
                                 def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                                 imageTag = "${imageName}:${commitId}"
                                 // Tag image với commit ID của HEAD
@@ -56,11 +56,6 @@ pipeline {
                                 sh '../mvnw package -DskipTests'
                                 sh "docker build -t ${imageTag} ."
                                 sh "docker push ${imageTag}"
-                            }
-                            if (targetBranch != "main"){
-                                // Return to the main branch
-                                checkout([$class: 'GitSCM', branches: [[name: 'main']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
-                                echo "Returned to branch: main"
                             }
                         }
                     }
