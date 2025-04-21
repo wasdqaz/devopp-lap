@@ -1,0 +1,46 @@
+pipeline {
+  agent any
+
+  environment {
+    GIT_REPO = 'https://github.com/wasdqaz/spring-petclinic-microservices-config.git'
+    GIT_CREDENTIALS_ID = 'github-credentials'
+  }
+
+  stages {
+    stage('Delete all checkout-dev-* environments') {
+      steps {
+        script {
+          // Clean up local clone first
+          sh 'rm -rf config-repo'
+
+          withCredentials([usernamePassword(credentialsId: "${env.GIT_CREDENTIALS_ID}", usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+            sh """
+              git clone https://${GIT_USER}:${GIT_PASS}@github.com/wasdqaz/spring-petclinic-microservices-config.git config-repo
+            """
+
+            dir('config-repo') {
+              sh """
+                echo "Removing all matching folders..."
+
+                rm -rf environment/checkout-dev/checkout-dev-*
+                rm -rf values/checkout-dev/checkout-dev-*
+                rm -f ingress/checkout-dev/*-ingress.yaml
+
+                echo "✅ All matching folders/files deleted."
+              """
+
+              // Commit and push changes
+              sh """
+                git config user.name "jenkins"
+                git config user.email "jenkins@company.com"
+                git add -A
+                git commit -m "[cleanup] Deleted all checkout-dev-* environments and ingresses"
+                git push
+              """
+            }
+          }
+        }
+      }
+    }
+  }
+}
