@@ -225,6 +225,8 @@ spec:
 
           // Commit all files
           sh """
+            git config user.name "jenkins"
+            git config user.email "jenkins@company.com"
             git add .
             git commit -m "[checkout-dev] ${branch}: all services -> ${commitId}"
             git push
