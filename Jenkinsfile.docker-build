@@ -236,7 +236,15 @@ spec:
     }
   }
 }
-
+        stage('Attach Link') {
+                    steps {
+                        script {
+                            currentBuild.displayName = "Display name #${currentBuild.number}"
+                            currentBuild.description = "Build description #${currentBuild.number} [Link to service](http://cicd.petclinic.local)"
+                        }
+                        
+                    }
+                }
     }// end of stages
 
     post {
