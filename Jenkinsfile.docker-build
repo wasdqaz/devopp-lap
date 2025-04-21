@@ -240,7 +240,7 @@ spec:
                     steps {
                         script {
                             currentBuild.displayName = "Display name #${currentBuild.number}"
-                            currentBuild.description = "Build description #${currentBuild.number} [Link to service](http://cicd.petclinic.local)"
+                            currentBuild.description = "Build description #${currentBuild.number} <a href='http://cicd.petclinic.local'>Link to service</a>"
                         }
                         
                     }
