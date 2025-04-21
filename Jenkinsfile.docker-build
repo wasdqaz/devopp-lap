@@ -57,6 +57,11 @@ pipeline {
                                 sh "docker build -t ${imageTag} ."
                                 sh "docker push ${imageTag}"
                             }
+                            if (targetBranch != "main"){
+                                // Return to the main branch
+                                checkout([$class: 'GitSCM', branches: [[name: 'main']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: scm.userRemoteConfigs[0].url]]])
+                                echo "Returned to branch: main"
+                            }
                         }
                     }
                 }
