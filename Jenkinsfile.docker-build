@@ -74,13 +74,16 @@ pipeline {
 
                                 // Set tên branch cho service
                                 BRANCH_NAME = targetBranch
+
+                                //optional
+                                dir(module) {
+                                    echo "Building service: ${module} from branch: ${targetBranch}"
+                                    sh '../mvnw package -DskipTests'
+                                    sh "docker build -t ${imageTag} ."
+                                    sh "docker push ${imageTag}"
+                                }
                             }
-                            dir(module) {
-                                echo "Building service: ${module} from branch: ${targetBranch}"
-                                sh '../mvnw package -DskipTests'
-                                sh "docker build -t ${imageTag} ."
-                                sh "docker push ${imageTag}"
-                            }
+                            
                         }
                     }
                 }
