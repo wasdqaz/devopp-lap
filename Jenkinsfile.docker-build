@@ -86,7 +86,7 @@ pipeline {
                 }
             }
         }
-    }
+    
         
    stage('Create check out env') {
   steps {
