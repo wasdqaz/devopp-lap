@@ -40,7 +40,7 @@ pipeline {
                             .join(',')
         
                         MODULES_CHANGED = changedModules
-                        echo "Modules to process: ${env.MODULES_CHANGED}"
+                        echo "Modules to process: ${MODULES_CHANGED}"
                     } 
                     else {
                         echo "No changes detected - stopping pipeline."
