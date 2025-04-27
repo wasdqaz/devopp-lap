@@ -177,9 +177,9 @@ spec:
             path: "/"
             backend:
               service:
-                name: ${svc}
+                name: api-gateway
                 port:
-                  number: ${port}
+                  number: 8080
 """
 
             // One Application file per service
