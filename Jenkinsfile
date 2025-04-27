@@ -46,11 +46,11 @@ pipeline {
             }
         }
 
-        stage("Use developer_build.sh file") {
-            steps {
-                sh './developer_build.sh'
-            }
-        }
+        // stage("Use developer_build.sh file") {
+        //    steps {
+        //        sh './developer_build.sh'
+        //    }
+        // }
 
 
 
